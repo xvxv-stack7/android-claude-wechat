@@ -113,7 +113,7 @@ echo "[ok] start.sh 创建完成"
 
 echo ""
 echo "===== 第7步：启动 cc-connect ====="
-which proot > /dev/null 2>&1 || { echo "[fix] 装 proot..."; pkg install proot -y; }
+which proot > /dev/null 2>&1 || { echo "[fix] 装 proot..."; pkg install proot -y 2>/dev/null || true; }
 pkill -f cc-connect 2>/dev/null || true
 termux-wake-lock 2>/dev/null || true
 nohup proot -0 \
