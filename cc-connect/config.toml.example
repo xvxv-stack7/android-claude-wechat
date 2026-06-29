@@ -1,0 +1,46 @@
+data_dir = ""
+attachment_send = ""
+language = "zh"
+
+[display]
+mode = "quiet"
+thinking_messages = false
+tool_messages = false
+
+[[projects]]
+  name = "main"
+  reset_on_idle_mins = 0
+  show_context_indicator = false
+  reply_footer = false
+  admin_from = '*'
+
+  [projects.agent]
+    type = "claudecode"
+
+    [projects.agent.options]
+      cmd = "claude"
+      mode = "acceptEdits"
+      system_prompt = """你的AI角色设定写这里——可以参考网上公开的角色提示词模板，或者自己写。"""
+      work_dir = "/data/data/com.termux/files/home"
+
+  [[projects.platforms]]
+    type = "weixin"
+
+    [projects.platforms.options]
+      account_id = "你的微信账号ID@im.bot"
+      allow_from = "*"
+      base_url = "https://ilinkai.weixin.qq.com"
+      token = "你的微信账号ID@im.bot:你的token"
+
+  [projects.heartbeat]
+    enabled = false
+    interval_mins = 30
+    prompt = ""
+
+[log]
+  level = "info"
+
+[management]
+  enabled = true
+  port = 9820
+  token = "你的管理端token"
