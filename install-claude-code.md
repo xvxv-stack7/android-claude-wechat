@@ -6,19 +6,31 @@ Termux 安装 Claude Code 完整教程
 路线A：有代理（推荐，一步过）
 ==============================
 
-A1. 开代理去 https://f-droid.org 下 F-Droid 的 apk。
+1. 开代理去 https://f-droid.org 下 F-Droid 的 apk。
     （F-Droid 是一个开源软件应用商店，只有 F-Droid 下的最新版 Termux 才能装 Claude Code）
 
-A2. 装好 F-Droid 后搜 Termux 安装。
+2. 装好 F-Droid 后搜 Termux 安装。
 
-A3. 打开 Termux，配代理（端口改成你自己的）：
+3. 打开 Termux，配代理（端口改成你自己的）：
     export http_proxy=http://127.0.0.1:7890
     export https_proxy=http://127.0.0.1:7890
 
-A4. 验证代理通了没：
+   常见代理软件默认端口：
+     Clash / Clash Meta → 7890
+     v2rayNG / v2rayN   → 10809
+     Shadowsocks        → 1080
+     Sing-Box           → 2080
+
+   不确定就打开代理 app → 设置 → 找"端口""HTTP 端口""本地端口"。
+
+   注意：代理 app 开的是 VPN 模式而不是 HTTP 代理模式，export 不管用。
+   去代理 app 设置里把"允许来自局域网的连接"打开，Wi-Fi 里查本机局域网 IP
+   （一般是 192.168.x.x），export 里把 127.0.0.1 换成这个 IP。
+
+4. 验证代理通了没：
     curl -I https://registry.npmjs.org
 
-A5. 通了就跑这一条命令：
+5. 通了就跑这一条命令记得替换key（key去deepseek官网获取）：
     pkg update -y && pkg install nodejs binutils make python3 git -y && npm install -g --fetch-timeout=120000 @anthropic-ai/claude-code && mkdir -p ~/.claude && cat > ~/.claude/settings.json << 'EOF'
     {
       "env": {
@@ -36,24 +48,24 @@ A5. 通了就跑这一条命令：
     }
     EOF
 
-A6. 新开一个 Termux 窗口（让 PATH 生效），输入 claude 回车。
+6. 新开一个 Termux 窗口（让 PATH 生效），输入 claude 回车。
 
 
 路线B：无代理（可能断，多试几次）
 ==================================
 
-B1. F-Droid 官网被墙了，从清华镜像站下 apk：
+1. F-Droid 官网被墙了，从清华镜像站下 apk：
     https://mirrors.tuna.tsinghua.edu.cn/fdroid/archive/org.fdroid.fdroid_1019052.apk
     （F-Droid 是一个开源软件应用商店，只有 F-Droid 下的最新版 Termux 才能装 Claude Code）
 
-B2. 装完 F-Droid 后配镜像源才能加载软件列表：
+2. 装完 F-Droid 后配镜像源才能加载软件列表：
     - 打开 F-Droid → 设置 → 储存库
     - 删掉默认的 f-droid.org/repo（连不上）
     - 点右下角 + 号，添加：
       https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/?fingerprint=43238D512C1E5EB2D6569F4A3AFBF5523418B82E0A3ED1552770ABB9A9C9CCAB
     - 下拉刷新，搜 Termux 安装
 
-B3. 打开 Termux，跑这一条命令（镜像源和配置全包了，断了重跑就行）：
+3. 打开 Termux，跑这一条命令（镜像源和配置全包了，断了重跑就行，记得替换key，key去deepseek官网获取）：
     pkg update -y && pkg install nodejs binutils make python3 git -y && npm config set registry https://registry.npmmirror.com && npm install -g --fetch-timeout=120000 @anthropic-ai/claude-code && mkdir -p ~/.claude && cat > ~/.claude/settings.json << 'EOF'
     {
       "env": {
@@ -71,23 +83,10 @@ B3. 打开 Termux，跑这一条命令（镜像源和配置全包了，断了重
     }
     EOF
 
-B4. 新开一个 Termux 窗口（让 PATH 生效），输入 claude 回车。
+4. 新开一个 Termux 窗口（让 PATH 生效），输入 claude 回车。
 
 
-如何找到自己的代理端口
-======================
 
-常见代理软件默认端口：
-  Clash / Clash Meta   →  7890
-  v2rayNG / v2rayN     →  10809
-  Shadowsocks          →  1080
-  Sing-Box             →  2080
-
-如果不确定，打开代理 app → 设置 → 找"端口""HTTP 端口""本地端口""监听端口"这类字眼。
-
-注意：如果你的代理 app 开的是 VPN 模式而不是 HTTP 代理模式，export 那两行不管用。
-去代理 app 设置里把"允许来自局域网的连接"打开，然后在 Wi-Fi 设置里查本机局域网 IP
-（一般是 192.168.x.x），export 里把 127.0.0.1 换成这个 IP。
 
 
 常见报错和解决办法
