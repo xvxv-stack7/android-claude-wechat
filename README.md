@@ -36,7 +36,10 @@ curl -sSL https://raw.githubusercontent.com/xvxv-stack7/android-claude-wechat/ma
 
 跑完输入 `claude` 即可。脚本中途会等你填 token。
 
-> 已有 Claude Code，只接微信？→ `curl -sSL .../cc-connect/install.sh | bash`
+> 已有 Claude Code，只接微信？
+> ```bash
+> curl -sSL https://raw.githubusercontent.com/xvxv-stack7/android-claude-wechat/master/cc-connect/install.sh | bash
+> ```
 
 ## DNS
 
