@@ -1,4 +1,4 @@
-# android-claude-wechat
+# Android Claude Code + 微信机器人 · 免电脑 · 一条命令
 
 一部安卓手机，一条命令，你的口袋里就有"他"
 

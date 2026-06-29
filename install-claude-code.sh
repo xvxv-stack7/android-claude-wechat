@@ -28,6 +28,11 @@ echo "[ok] npm 镜像已切到国内源"
 echo ""
 echo "===== 第4步：安装 Claude Code ====="
 npm install -g --fetch-timeout=120000 @anthropic-ai/claude-code
+# 如果原生二进制没下载成功（国内常见），手动跑postinstall
+if ! command -v claude &> /dev/null; then
+    echo "[fix] 二进制缺失，手动下载..."
+    node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs" 2>/dev/null || true
+fi
 echo "[ok] Claude Code 安装完成"
 
 echo ""
