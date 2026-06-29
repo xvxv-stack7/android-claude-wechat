@@ -120,7 +120,7 @@ Termux 安装 Claude Code 完整教程
 解决：pkg install binutils make -y
 
 【关于固定版本】
-如果需要固定版本不自动升级：npm install -g @anthropic-ai/claude-code@2.1.153
+如果需要固定版本不自动升级：npm install -g @anthropic-ai/claude-code@2.1.195
 
 【关于开机自启】
 Termux 开机自启需要额外配置 Termux:Boot 插件，可在 F-Droid 里搜。
