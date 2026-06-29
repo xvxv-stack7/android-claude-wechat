@@ -27,7 +27,15 @@ curl -sSL https://raw.githubusercontent.com/xvxv-stack7/android-claude-wechat/ma
 
 装 Claude Code → 等你填 token → 装 cc-connect → 弹二维码扫码。全程两次暂停，其他全自动。跑完微信里就有一个 AI Agent。
 
-> 只要 Claude Code？→ `install-claude-code.sh`　|　已有 Claude Code 只接微信？→ `cc-connect/install.sh`
+## 只要 Claude Code（不接微信）
+
+```bash
+curl -sSL https://raw.githubusercontent.com/xvxv-stack7/android-claude-wechat/master/install-claude-code.sh | bash
+```
+
+跑完输入 `claude` 即可。脚本中途会等你填 token。
+
+> 已有 Claude Code，只接微信？→ `curl -sSL .../cc-connect/install.sh | bash`
 
 ## DNS
 
