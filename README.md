@@ -46,21 +46,7 @@ EOF
 
 ## 接入微信（cc-connect）
 
-让AI能收发微信消息。cc-connect是MIT开源的npm包，一条命令安装。它会自动检测安卓/ARM平台，从GitHub下载二进制（国内被墙则自动切Gitee备用源）。
-
-```bash
-# 安装cc-connect（自动下载对应平台二进制）
-npm install -g cc-connect
-
-# 复制配置模板
-cp cc-connect/config.toml.example ~/.cc-connect/config.toml
-
-# 编辑配置（改微信token和账号）
-nano ~/.cc-connect/config.toml
-
-# 启动
-bash cc-connect/start.sh
-```
+让AI Agent收发微信消息。Termux上标准npm安装有坑，需要分步手动操作+proot包装启动。完整步骤见 [cc-connect/README.md](cc-connect/README.md)。
 
 ## ⚠️ DNS（必看）
 

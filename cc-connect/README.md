@@ -1,97 +1,108 @@
 # cc-connect：把 Claude Code 接入微信
 
-## 安装和配置
+> 实测通过版本。非标准npm安装——Termux环境需要特殊处理。
+
+## 前置依赖
+
+装Claude Code时已装过的跳过，缺的补：
 
 ```bash
-# 安装cc-connect（自动下载对应平台的二进制）
-npm install -g cc-connect
+pkg install proot ca-certificates -y
+```
 
+## 安装（Termux实测版）
+
+标准 `npm install -g` 在Termux上postinstall脚本可能失败，用分步手动方式：
+
+```bash
+# 1. 安装npm包本体（跳过自动下载二进制）
+npm install -g cc-connect --ignore-scripts
+
+# 2. 手动下载ARM64二进制
+#    去GitHub查最新版本：https://github.com/chenhg5/cc-connect/releases
+#    下载 linux-arm64.tar.gz（国内被墙则用Gitee: https://gitee.com/cg33/cc-connect/releases）
+curl -L -o /tmp/cc-connect.tar.gz https://github.com/chenhg5/cc-connect/releases/download/v1.3.4/cc-connect-v1.3.4-linux-arm64.tar.gz
+
+# 3. 解压到npm全局目录的bin下
+tar xzf /tmp/cc-connect.tar.gz -C /tmp/
+cp /tmp/cc-connect /data/data/com.termux/files/usr/lib/node_modules/cc-connect/bin/
+chmod +x /data/data/com.termux/files/usr/lib/node_modules/cc-connect/bin/cc-connect
+```
+
+## 配置
+
+```bash
 # 创建配置目录
 mkdir -p ~/.cc-connect
 
 # 复制配置模板
 cp cc-connect/config.toml.example ~/.cc-connect/config.toml
 
-# 编辑配置：填你的微信账号ID和token（从微信机器人平台获取）
+# 编辑：改微信账号ID和token
 nano ~/.cc-connect/config.toml
 
 # 扫码绑定微信
 cc-connect weixin setup --config ~/.cc-connect/config.toml
-
-# 启动
-bash cc-connect/start.sh
 ```
 
-扫码成功后配置会被写入config.toml，之后每次启动只需要最后一步。
+扫码成功后token自动写入config.toml，以后不需要重新扫码。
 
-## DNS 配置
+## 启动（proot包装，必读）
 
-## 为什么需要手动配 DNS？
-
-Termux 默认不写 `/etc/resolv.conf`。npm 下载、cc-connect 连微信服务器、Claude Code 调 API——全都需要域名解析。DNS 不通，后面全白搭。
-
-## 一步修复
+Termux直跑cc-connect有三个必踩的坑，proot -0一步解决：
 
 ```bash
-# 创建resolv.conf
+termux-wake-lock
+nohup proot -0 \
+  -b /data/data/com.termux/files/usr/bin/env:/usr/bin/env \
+  -b /data/data/com.termux/files/usr/etc/resolv.conf:/etc/resolv.conf \
+  -b /data/data/com.termux/files/usr/etc/hosts:/etc/hosts \
+  ~/.cc-connect/start.sh > ~/.cc-connect/cc-connect.log 2>&1 &
+```
+
+三个坑对应三行 -b：
+- **faccessat2 SIGSYS** → `proot -0` 系统调用模拟
+- **DNS解析失败** → `-b resolv.conf`
+- **shebang /usr/bin/env** → `-b env` + `-b hosts`
+
+## DNS
+
+Termux默认没有 `/etc/resolv.conf`，先创建：
+
+```bash
 echo "nameserver 8.8.8.8" > /data/data/com.termux/files/usr/etc/resolv.conf
 echo "nameserver 114.114.114.114" >> /data/data/com.termux/files/usr/etc/resolv.conf
 ```
 
-## 验证
-
+验证：
 ```bash
-# 国内用这个
 ping -c 2 registry.npmmirror.com
-
-# 国外用这个
-ping -c 2 registry.npmjs.org
 ```
 
-如果能ping通，DNS就对了。
-
-## DNS还是不通？
-
-### 1. 检查你是不是在代理/VPN模式
-
-如果你的代理app开的是VPN模式（而不是HTTP代理），DNS可能被代理接管。切到HTTP代理模式，或者在代理app里检查DNS设置。
-
-### 2. 换国内DNS
+## 停止
 
 ```bash
-echo "nameserver 223.5.5.5" > /data/data/com.termux/files/usr/etc/resolv.conf   # 阿里DNS
-echo "nameserver 119.29.29.29" > /data/data/com.termux/files/usr/etc/resolv.conf  # 腾讯DNS
+pkill -f cc-connect
 ```
-
-### 3. 检查resolv.conf路径
-
-Termux不同版本resolv.conf位置可能不同：
-```bash
-# 试试这几个位置
-ls -la /data/data/com.termux/files/usr/etc/resolv.conf
-ls -la /etc/resolv.conf
-```
-
-## 启动脚本说明
-
-`start.sh` 里 `SSL_CERT_FILE` 环境变量是指定TLS证书路径——没有它，HTTPS连接会报证书错误。DNS和证书两样配好，cc-connect才能稳定连接微信服务器。
 
 ## 常见报错
 
 | 报错 | 原因 | 解决 |
 |-----|------|-----|
-| `EAI_AGAIN` | DNS解析失败 | 配resolv.conf |
-| `certificate verify failed` | 证书路径不对 | 检查 `SSL_CERT_FILE` 路径 |
+| `EAI_AGAIN` | DNS解析失败 | 配resolv.conf，检查proot是否绑了 |
+| `SIGSYS` | faccessat2不被支持 | 启动命令加 `proot -0` |
+| `/usr/bin/env: not found` | shebang路径不存在 | proot -b 映射env |
+| `certificate verify failed` | TLS证书路径不对 | 检查 `SSL_CERT_FILE` |
 | `ECONNREFUSED` | 连不上服务器 | 检查代理/VPN是否拦截 |
-| `ETIMEDOUT` | 连接超时 | 换DNS或检查网络 |
 
-## 启动
+## 启动脚本说明
 
+`start.sh` 内容：
 ```bash
-bash cc-connect/start.sh
+export SSL_CERT_FILE=/data/data/com.termux/files/usr/etc/tls/cert.pem
+export HOME=/data/data/com.termux/files/home
+exec /data/data/com.termux/files/usr/lib/node_modules/cc-connect/bin/cc-connect \
+  --config /data/data/com.termux/files/home/.cc-connect/config.toml
 ```
 
-后台运行，重启Termux窗口后也不断。想关掉：
-```bash
-pkill -f cc-connect
-```
+SSL_CERT_FILE 指向Termux的TLS证书——没有它HTTPS连微信服务器会失败。
