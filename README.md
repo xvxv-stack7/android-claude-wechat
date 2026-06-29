@@ -16,6 +16,9 @@
 2. F-Droid 里搜 **Termux** 安装
 3. 打开 Termux
 
+> **有代理？** 跑脚本前先设（换成你的端口）：`export http_proxy=http://127.0.0.1:7890 && export https_proxy=http://127.0.0.1:7890`
+> 不知道端口？常见：Clash→7890 / v2ray→10809 / Shadowsocks→1080。脚本内置了国内镜像兜底，无代理也能跑，只是可能慢。
+
 ## 一条命令
 
 ```bash
