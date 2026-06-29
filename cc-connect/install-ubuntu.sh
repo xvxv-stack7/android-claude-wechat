@@ -1,7 +1,6 @@
 #!/bin/bash
 # ============================================
 # cc-connect Ubuntu 容器测试版
-# 在 proot-distro login ubuntu --isolated 里跑
 # ============================================
 set -e
 
@@ -15,7 +14,7 @@ ping -c 1 -W 3 8.8.8.8 > /dev/null 2>&1 && echo "[ok] DNS 通" || echo "[warn] D
 
 echo ""
 echo "===== 第1步：检查网络 ====="
-ping -c 1 -W 3 registry.npmmirror.com > /dev/null 2>&1 && echo "[ok] 网络通" || { echo "[note] 网络不通但不影响测试，继续..."; }
+ping -c 1 -W 3 registry.npmmirror.com > /dev/null 2>&1 && echo "[ok] 网络通" || echo "[note] 网络不通但不影响测试"
 
 echo ""
 echo "===== 第2步：装依赖 ====="
@@ -30,6 +29,10 @@ echo "[ok] 依赖安装完成"
 echo ""
 echo "===== 第3步：安装 cc-connect ====="
 npm install -g cc-connect --ignore-scripts
+# 找到npm全局安装的实际路径
+NODE_DIR="$(npm root -g)/cc-connect"
+echo "[info] npm全局路径: $NODE_DIR"
+[ -d "$NODE_DIR" ] || { echo "[!] cc-connect npm包未安装到预期路径"; exit 1; }
 echo "[ok] npm 包安装完成"
 
 echo ""
@@ -38,21 +41,19 @@ CC_VERSION="v1.3.4"
 CC_FILE="cc-connect-${CC_VERSION}-linux-arm64.tar.gz"
 curl -L --connect-timeout 10 --max-time 30 --retry 1 -o /tmp/${CC_FILE} "https://ghproxy.net/https://github.com/chenhg5/cc-connect/releases/download/${CC_VERSION}/${CC_FILE}" || curl -L --connect-timeout 10 --max-time 30 -o /tmp/${CC_FILE} "https://github.com/chenhg5/cc-connect/releases/download/${CC_VERSION}/${CC_FILE}"
 
-NODE_DIR=$(npm root -g)/cc-connect
-mkdir -p ${NODE_DIR}/bin
+mkdir -p "${NODE_DIR}/bin"
 tar xzf /tmp/${CC_FILE} -C /tmp/
-# 解压后自动找二进制（可能叫cc-connect或在子目录里）
 BIN=$(find /tmp/ -name "cc-connect*" -type f 2>/dev/null | head -1)
 [ -z "$BIN" ] && { echo "[!] 找不到解压后的二进制"; exit 1; }
-cp "$BIN" ${NODE_DIR}/bin/cc-connect
-chmod +x ${NODE_DIR}/bin/cc-connect
-ln -sf ${NODE_DIR}/bin/cc-connect /usr/local/bin/cc-connect
+cp "$BIN" "${NODE_DIR}/bin/cc-connect"
+chmod +x "${NODE_DIR}/bin/cc-connect"
+ln -sf "${NODE_DIR}/bin/cc-connect" /usr/local/bin/cc-connect
 cc-connect --version && echo "[ok] 二进制安装成功"
 
 echo ""
 echo "===== 第5步：写入配置 ====="
 mkdir -p ~/.cc-connect
-cat > ~/.cc-connect/config.toml << 'TOML'
+cat > ~/.cc-connect/config.toml << TOML
 data_dir = ""
 language = "zh"
 
@@ -98,23 +99,22 @@ echo "[ok] config.toml 写入完成"
 
 echo ""
 echo "===== 第6步：创建启动脚本 ====="
-cat > ~/.cc-connect/start.sh << 'SCRIPT'
+cat > ~/.cc-connect/start.sh << SCRIPT
 #!/bin/bash
 export HOME=/root
-exec /usr/local/lib/node_modules/cc-connect/bin/cc-connect \
-  --config /root/.cc-connect/config.toml
+exec ${NODE_DIR}/bin/cc-connect --config /root/.cc-connect/config.toml
 SCRIPT
 chmod +x ~/.cc-connect/start.sh
-echo "[ok] start.sh 创建完成"
+echo "[ok] start.sh 创建完成（使用路径: ${NODE_DIR}）"
 
 echo ""
 echo "===== 第7步：启动 ====="
 set +e
 bash ~/.cc-connect/start.sh > ~/.cc-connect/cc-connect.log 2>&1 &
 sleep 2
-echo "[ok] 启动命令已执行（测试环境无Claude Code，cc-connect找不到claude是正常的）"
+echo "[ok] 启动命令已执行（测试环境无Claude Code，找不到claude正常）"
 echo "日志："
-cat ~/.cc-connect/cc-connect.log 2>/dev/null | head -5 || echo "[note] 日志为空"
+cat ~/.cc-connect/cc-connect.log 2>/dev/null | head -5 || echo "[note] 日志为空（预期）"
 set -e
 
 echo ""
