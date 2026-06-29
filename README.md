@@ -12,61 +12,46 @@
 
 ## 两条路，选一条
 
-| 你想要什么 | 看哪个 |
-|-----------|--------|
-| 技术极客，只要能用 | [install-claude-code.md](install-claude-code.md) |
-| 想要一个有温度的AI陪聊 | 往下看，跟着走 |
+| 你想要什么 | 跑这条命令 |
+|-----------|-----------|
+| 只要 Claude Code | ↓ 下面第一条 |
+| Claude Code + 微信聊天 | ↓ 下面第二条 |
 
-## 前置
+## 前置：装 F-Droid 和 Termux
 
-一部安卓手机，装好：
-- [F-Droid](https://f-droid.org)（开源应用商店）
-- 从F-Droid安装 **Termux**
+1. 手机浏览器打开 https://f-droid.org 下 F-Droid（官网被墙则用清华镜像：https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/）
+2. 装好 F-Droid 后搜 **Termux** 安装
+3. 打开 Termux
 
-## 第一次接触
-
-打开Termux，粘贴下面这一条命令，回车。等它跑完。
+## 方案一：只要 Claude Code
 
 ```bash
-pkg update -y && pkg install nodejs binutils make python3 git -y && npm config set registry https://registry.npmmirror.com && npm install -g --fetch-timeout=120000 @anthropic-ai/claude-code && mkdir -p ~/.claude && cat > ~/.claude/settings.json << 'EOF'
-{
-  "env": {
-    "ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic",
-    "ANTHROPIC_AUTH_TOKEN": "你的token填这里",
-    "ANTHROPIC_MODEL": "deepseek-v4-pro",
-    "ANTHROPIC_SMALL_FAST_MODEL": "deepseek-v4-flash",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "deepseek-v4-pro",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "deepseek-v4-pro",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "deepseek-v4-flash",
-    "DISABLE_AUTOUPDATER": "1"
-  },
-  "model": "deepseek-v4-pro",
-  "language": "zh-CN"
-}
-EOF
+curl -sSL https://raw.githubusercontent.com/xvxv-stack7/android-claude-wechat/master/install-claude-code.sh | bash
 ```
 
-跑完后输入 `claude`，你的AI就在手机里了。
+跑完输入 `claude` 即可。脚本会暂停等你填 DeepSeek token。
 
-## 接入微信（cc-connect）
-
-让AI Agent收发微信消息。Termux上标准npm安装有坑，需要分步手动操作+proot包装启动。完整步骤见 [cc-connect/README.md](cc-connect/README.md)。
-
-## ⚠️ DNS（必看）
-
-Termux默认没有DNS服务器配置，npm下载和微信连接都会断。执行：
+## 方案二：Claude Code + 微信（全链路）
 
 ```bash
-echo "nameserver 8.8.8.8" > /data/data/com.termux/files/usr/etc/resolv.conf
-echo "nameserver 114.114.114.114" >> /data/data/com.termux/files/usr/etc/resolv.conf
+curl -sSL https://raw.githubusercontent.com/xvxv-stack7/android-claude-wechat/master/all-in-one.sh | bash
 ```
 
-验证通了没：
+一条命令装完 Claude Code + cc-connect，中途暂停两次：填 token、扫二维码。跑完后微信里就有了一个 AI Agent。
+
+## 方案三：已经装了 Claude Code，只接微信
+
 ```bash
-ping -c 1 registry.npmjs.org
+curl -sSL https://raw.githubusercontent.com/xvxv-stack7/android-claude-wechat/master/cc-connect/install.sh | bash
 ```
 
-如果还是不通，参考 [cc-connect/README.md](cc-connect/README.md) 里的详细排查。
+## 其他安装方式
+
+有代理/无代理分步教程 → [install-claude-code.md](install-claude-code.md)
+
+## DNS
+
+脚本自动检查并修复。如手动排查，见 [cc-connect/README.md](cc-connect/README.md)。
 
 ## 目录结构
 
