@@ -17,7 +17,8 @@
 3. 打开 Termux
 
 > **有代理？** 跑脚本前先设（换成你的端口）：`export http_proxy=http://127.0.0.1:7890 && export https_proxy=http://127.0.0.1:7890`
-> 不知道端口？常见：Clash→7890 / v2ray→10809 / Shadowsocks→1080。脚本内置了国内镜像兜底，无代理也能跑，只是可能慢。
+> 不知道端口？常见：Clash→7890 / v2ray→10809 / Shadowsocks→1080。
+> **curl链接打不开？** 把 `raw.githubusercontent.com` 换成 `ghproxy.net/https://raw.githubusercontent.com`。脚本内部自动加了ghproxy兜底，只是入口curl需要手动换一下。
 
 ## 一条命令
 
