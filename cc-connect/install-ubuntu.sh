@@ -110,12 +110,11 @@ echo "[ok] start.sh 创建完成"
 echo ""
 echo "===== 第7步：启动 ====="
 set +e
-pkill -f cc-connect 2>/dev/null
-(setsid ~/.cc-connect/start.sh > ~/.cc-connect/cc-connect.log 2>&1 &)
+bash ~/.cc-connect/start.sh > ~/.cc-connect/cc-connect.log 2>&1 &
 sleep 2
 echo "[ok] 启动命令已执行（测试环境无Claude Code，cc-connect找不到claude是正常的）"
 echo "日志："
-cat ~/.cc-connect/cc-connect.log 2>/dev/null | tail -5 || echo "[note] 日志为空"
+cat ~/.cc-connect/cc-connect.log 2>/dev/null | head -5 || echo "[note] 日志为空"
 set -e
 
 echo ""
