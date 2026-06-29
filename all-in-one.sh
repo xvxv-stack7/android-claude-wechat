@@ -26,7 +26,7 @@ fi
 
 echo ""
 echo "===== 第2步：装依赖 ====="
-pkg update -y && pkg install nodejs binutils make python3 git proot ca-certificates -y
+pkg update -y && pkg install nodejs binutils make python3 git proot ca-certificates curl -y
 echo "[ok] 依赖安装完成"
 
 echo ""
