@@ -120,6 +120,7 @@ set -e
 echo ""
 echo "===== 第8步：扫码 ====="
 echo "请用微信扫描二维码..."
+export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 cc-connect weixin setup --config ~/.cc-connect/config.toml
 
 echo ""

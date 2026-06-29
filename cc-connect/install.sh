@@ -142,6 +142,7 @@ echo "=============================================="
 echo ""
 
 # 扫码
+export SSL_CERT_FILE=/data/data/com.termux/files/usr/etc/tls/cert.pem
 proot -0 cc-connect weixin setup --config ~/.cc-connect/config.toml
 
 echo ""
