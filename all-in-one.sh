@@ -69,7 +69,7 @@ echo "  2. 注册登录 → API Keys → 创建 → 复制 sk-xxx"
 echo "  3. 回来粘贴 token（直接粘贴然后回车）"
 echo "=============================================="
 echo ""
-read -p "你的 DeepSeek token: " USER_TOKEN
+read -p "你的 DeepSeek token: " USER_TOKEN < /dev/tty
 # 替换占位符
 sed -i "s/你的token填这里/${USER_TOKEN}/" ~/.claude/settings.json
 echo "[ok] token 已写入配置"

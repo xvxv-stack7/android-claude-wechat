@@ -60,7 +60,7 @@ echo "  1. 浏览器 https://platform.deepseek.com"
 echo "  2. 注册 → API Keys → 创建 → 复制 sk-xxx"
 echo "=============================================="
 echo ""
-read -p "粘贴你的 token: " USER_TOKEN
+read -p "粘贴你的 token: " USER_TOKEN < /dev/tty
 sed -i "s/你的token填这里/${USER_TOKEN}/" ~/.claude/settings.json
 echo "[ok] token 已写入"
 
