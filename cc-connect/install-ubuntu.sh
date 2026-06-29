@@ -42,7 +42,7 @@ NODE_DIR=$(npm root -g)/cc-connect
 mkdir -p ${NODE_DIR}/bin
 tar xzf /tmp/${CC_FILE} -C /tmp/
 # 解压后自动找二进制（可能叫cc-connect或在子目录里）
-BIN=$(find /tmp/ -name "cc-connect" -type f 2>/dev/null | head -1)
+BIN=$(find /tmp/ -name "cc-connect*" -type f 2>/dev/null | head -1)
 [ -z "$BIN" ] && { echo "[!] 找不到解压后的二进制"; exit 1; }
 cp "$BIN" ${NODE_DIR}/bin/cc-connect
 chmod +x ${NODE_DIR}/bin/cc-connect

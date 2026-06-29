@@ -42,7 +42,7 @@ fi
 echo "[ok] 二进制下载完成"
 tar xzf /tmp/${CC_FILE} -C /tmp/
 mkdir -p ${BIN_DIR}
-BIN=$(find /tmp/ -name "cc-connect" -type f 2>/dev/null | head -1)
+BIN=$(find /tmp/ -name "cc-connect*" -type f 2>/dev/null | head -1)
 [ -z "$BIN" ] && { echo "[!] 找不到解压后的二进制"; exit 1; }
 cp "$BIN" ${BIN_DIR}/cc-connect
 chmod +x ${BIN_DIR}/cc-connect
