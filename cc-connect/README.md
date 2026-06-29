@@ -1,4 +1,30 @@
-# cc-connect 在 Termux 上的 DNS 配置
+# cc-connect：把 Claude Code 接入微信
+
+## 安装和配置
+
+```bash
+# 安装cc-connect（自动下载对应平台的二进制）
+npm install -g cc-connect
+
+# 创建配置目录
+mkdir -p ~/.cc-connect
+
+# 复制配置模板
+cp cc-connect/config.toml.example ~/.cc-connect/config.toml
+
+# 编辑配置：填你的微信账号ID和token（从微信机器人平台获取）
+nano ~/.cc-connect/config.toml
+
+# 扫码绑定微信
+cc-connect weixin setup --config ~/.cc-connect/config.toml
+
+# 启动
+bash cc-connect/start.sh
+```
+
+扫码成功后配置会被写入config.toml，之后每次启动只需要最后一步。
+
+## DNS 配置
 
 ## 为什么需要手动配 DNS？
 
