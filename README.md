@@ -10,44 +10,21 @@
 
 第一次用Termux、不知道怎么敲命令、不知道AI和手机怎么配合？→ [NEWBIE.md](NEWBIE.md)
 
-## 两条路，选一条
+## 前置
 
-| 你想要什么 | 跑这条命令 |
-|-----------|-----------|
-| 只要 Claude Code | ↓ 下面第一条 |
-| Claude Code + 微信聊天 | ↓ 下面第二条 |
-
-## 前置：装 F-Droid 和 Termux
-
-1. 手机浏览器打开 https://f-droid.org 下 F-Droid（官网被墙则用清华镜像：https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/）
-2. 装好 F-Droid 后搜 **Termux** 安装
+1. 装 F-Droid（开源应用商店，清华镜像直下：https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/）
+2. F-Droid 里搜 **Termux** 安装
 3. 打开 Termux
 
-## 方案一：只要 Claude Code
-
-```bash
-curl -sSL https://raw.githubusercontent.com/xvxv-stack7/android-claude-wechat/master/install-claude-code.sh | bash
-```
-
-跑完输入 `claude` 即可。脚本会暂停等你填 DeepSeek token。
-
-## 方案二：Claude Code + 微信（全链路）
+## 一条命令
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/xvxv-stack7/android-claude-wechat/master/all-in-one.sh | bash
 ```
 
-一条命令装完 Claude Code + cc-connect，中途暂停两次：填 token、扫二维码。跑完后微信里就有了一个 AI Agent。
+装 Claude Code → 等你填 token → 装 cc-connect → 弹二维码扫码。全程两次暂停，其他全自动。跑完微信里就有一个 AI Agent。
 
-## 方案三：已经装了 Claude Code，只接微信
-
-```bash
-curl -sSL https://raw.githubusercontent.com/xvxv-stack7/android-claude-wechat/master/cc-connect/install.sh | bash
-```
-
-## 其他安装方式
-
-有代理/无代理分步教程 → [install-claude-code.md](install-claude-code.md)
+> 只要 Claude Code？→ `install-claude-code.sh`　|　已有 Claude Code 只接微信？→ `cc-connect/install.sh`
 
 ## DNS
 
