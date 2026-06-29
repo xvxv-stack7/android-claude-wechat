@@ -57,6 +57,17 @@ EOF
 echo "[ok] 配置写入完成"
 
 echo ""
+echo "=============================================="
+echo "  去 DeepSeek 拿 token（没有就先去注册）"
+echo "  1. 浏览器 https://platform.deepseek.com"
+echo "  2. 注册 → API Keys → 创建 → 复制 sk-xxx"
+echo "=============================================="
+echo ""
+read -p "粘贴你的 token: " USER_TOKEN
+sed -i "s/你的token填这里/${USER_TOKEN}/" ~/.claude/settings.json
+echo "[ok] token 已写入"
+
+echo ""
 echo "===== 第6步：修复 PATH ====="
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc 2>/dev/null || true
