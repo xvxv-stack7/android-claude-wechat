@@ -116,7 +116,7 @@ echo "[ok] start.sh 创建完成"
 echo ""
 echo "===== 第7步：启动 cc-connect ====="
 which proot > /dev/null 2>&1 || { echo "[fix] 装 proot..."; pkg install proot -y 2>/dev/null || true; }
-pkill -f cc-connect 2>/dev/null || true
+pkill -f "/bin/cc-connect" 2>/dev/null || true
 termux-wake-lock 2>/dev/null || true
 nohup proot -0 \
   -b /data/data/com.termux/files/usr/bin/env:/usr/bin/env \
@@ -125,7 +125,7 @@ nohup proot -0 \
   ~/.cc-connect/start.sh > ~/.cc-connect/cc-connect.log 2>&1 &
 
 sleep 3
-if tail -10 ~/.cc-connect/cc-connect.log | grep -q "ready-for-poll\|platform ready"; then
+if tail -10 ~/.cc-connect/cc-connect.log | grep -qE "ready-for-poll|platform ready"; then
     echo "[ok] cc-connect 启动成功"
 else
     echo "[warn] 日志没看到就绪标志，但进程已启动。查看日志：tail ~/.cc-connect/cc-connect.log"
