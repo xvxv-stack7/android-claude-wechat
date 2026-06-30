@@ -39,23 +39,24 @@ if ! claude --version &> /dev/null 2>&1; then
     node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs" 2>&1 || true
     if ! claude --version &> /dev/null 2>&1; then
         echo "[fix] install.cjs失败，curl直下二进制..."
-        mkdir -p ~/.local/bin
+        mkdir -p ~/.local/share/claude/versions ~/.local/bin
         # 优先下载47MB xz压缩包（快），失败再试官方CDN直下241MB
-        if curl -fsSL --connect-timeout 10 --max-time 120 "https://github.com/xvxv-stack7/android-claude-wechat/releases/download/binary-2.1.195/claude-2.1.195-arm64.xz" -o ~/.local/bin/claude.xz 2>/dev/null; then
-            python3 -c "import lzma,sys; sys.stdout.buffer.write(lzma.open('$HOME/.local/bin/claude.xz').read())" > ~/.local/bin/claude 2>/dev/null
-            rm -f ~/.local/bin/claude.xz
+        if curl -fsSL --connect-timeout 10 --max-time 120 "https://github.com/xvxv-stack7/android-claude-wechat/releases/download/binary-2.1.195/claude-2.1.195-arm64.xz" -o ~/.local/share/claude/versions/claude.xz 2>/dev/null; then
+            python3 -c "import lzma,sys; sys.stdout.buffer.write(lzma.open('$HOME/.local/share/claude/versions/claude.xz').read())" > ~/.local/share/claude/versions/2.1.195 2>/dev/null
+            rm -f ~/.local/share/claude/versions/claude.xz
             echo "[ok] xz压缩包下载解压成功"
         fi
-        if [ ! -f ~/.local/bin/claude ]; then
-            curl -fsSL --connect-timeout 10 --max-time 300 "https://downloads.claude.ai/claude-code-releases/2.1.195/linux-arm64/claude" -o ~/.local/bin/claude 2>/dev/null \
-            || curl -fsSL --connect-timeout 10 --max-time 300 "https://downloads.claude.ai/claude-code-releases/2.1.195/linux-arm64-musl/claude" -o ~/.local/bin/claude 2>/dev/null
+        if [ ! -f ~/.local/share/claude/versions/2.1.195 ]; then
+            curl -fsSL --connect-timeout 10 --max-time 300 "https://downloads.claude.ai/claude-code-releases/2.1.195/linux-arm64/claude" -o ~/.local/share/claude/versions/2.1.195 2>/dev/null \
+            || curl -fsSL --connect-timeout 10 --max-time 300 "https://downloads.claude.ai/claude-code-releases/2.1.195/linux-arm64-musl/claude" -o ~/.local/share/claude/versions/2.1.195 2>/dev/null
         fi
-        if [ -f ~/.local/bin/claude ]; then
-            chmod +x ~/.local/bin/claude
+        if [ -f ~/.local/share/claude/versions/2.1.195 ]; then
+            chmod +x ~/.local/share/claude/versions/2.1.195
             echo "[ok] 二进制就绪"
         else
             echo "[!] 二进制下载失败，手动运行："
-            echo "    curl -x http://127.0.0.1:7890 -fsSL --max-time 120 \"https://github.com/xvxv-stack7/android-claude-wechat/releases/download/binary-2.1.195/claude-2.1.195-arm64.xz\" -o ~/.local/bin/claude.xz && python3 -c \"import lzma,sys; sys.stdout.buffer.write(lzma.open('\$HOME/.local/bin/claude.xz').read())\" > ~/.local/bin/claude && chmod +x ~/.local/bin/claude"
+            echo "    mkdir -p ~/.local/share/claude/versions && curl -x http://127.0.0.1:7890 -fsSL --max-time 120 \"https://github.com/xvxv-stack7/android-claude-wechat/releases/download/binary-2.1.195/claude-2.1.195-arm64.xz\" -o ~/.local/share/claude/versions/claude.xz && python3 -c \"import lzma,sys; sys.stdout.buffer.write(lzma.open('\$HOME/.local/share/claude/versions/claude.xz').read())\" > ~/.local/share/claude/versions/2.1.195 && chmod +x ~/.local/share/claude/versions/2.1.195"
+        fi
         fi
     fi
 fi
