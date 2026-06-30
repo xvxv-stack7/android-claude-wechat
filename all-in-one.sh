@@ -37,8 +37,8 @@ echo ""
 echo "===== 第3步：换镜像 + 装 Claude Code ====="
 npm config set registry https://registry.npmmirror.com
 npm install -g --fetch-timeout=120000 @anthropic-ai/claude-code
-if ! command -v claude &> /dev/null; then
-    echo "[fix] 二进制缺失，手动下载..."
+if ! claude --version &> /dev/null 2>&1; then
+    echo "[fix] 二进制缺失（wrapper在但没Go binary），手动下载..."
     node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs" 2>/dev/null || true
 fi
 # Termux 修复（2026-06-30 絮絮实测）
