@@ -66,6 +66,11 @@ GLIBC_LIB="/data/data/com.termux/files/usr/glibc/lib/libc.so"
 WRAPPER="/data/data/com.termux/files/usr/bin/claude"
 VERSIONS_DIR="$HOME/.local/share/claude/versions"
 mkdir -p "$VERSIONS_DIR"
+# 0. 检查 glibc
+if [ ! -f "$GLIBC_LIB" ]; then
+    echo "[fix] glibc 缺失，尝试安装..."
+    pkg install glibc-repo -y 2>/dev/null && pkg install glibc -y 2>/dev/null || echo "[!] glibc 安装失败，手动装：pkg install glibc-repo -y && pkg install glibc -y"
+fi
 # 1. 清理残留 .tmp 和 196 版本
 rm -f "$VERSIONS_DIR"/2.1.196.tmp "$VERSIONS_DIR"/2.1.196 2>/dev/null
 echo "[fix] 残留文件已清"
