@@ -10,9 +10,13 @@ if ping -c 1 -W 3 registry.npmmirror.com > /dev/null 2>&1; then
     echo "[ok] DNS 通"
 else
     echo "[fix] 配 DNS..."
-    echo "nameserver 8.8.8.8" > /data/data/com.termux/files/usr/etc/resolv.conf
-    echo "nameserver 114.114.114.114" >> /data/data/com.termux/files/usr/etc/resolv.conf
-    ping -c 1 -W 3 registry.npmmirror.com > /dev/null 2>&1 && echo "[ok] DNS 修好了" || { echo "[!] DNS 还是不通"; exit 1; }
+    echo "nameserver 223.5.5.5" > /data/data/com.termux/files/usr/etc/resolv.conf
+    echo "nameserver 119.29.29.29" >> /data/data/com.termux/files/usr/etc/resolv.conf
+    ping -c 1 -W 3 registry.npmmirror.com > /dev/null 2>&1 && echo "[ok] DNS 修好了（阿里/腾讯）" || {
+        echo "nameserver 8.8.8.8" >> /data/data/com.termux/files/usr/etc/resolv.conf
+        echo "nameserver 114.114.114.114" >> /data/data/com.termux/files/usr/etc/resolv.conf
+        ping -c 1 -W 3 registry.npmmirror.com > /dev/null 2>&1 && echo "[ok] DNS 修好了（谷歌/114）" || { echo "[!] DNS 不通，检查网络或开代理后重试"; exit 1; }
+    }
 fi
 
 echo ""
