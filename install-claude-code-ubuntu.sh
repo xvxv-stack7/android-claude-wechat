@@ -40,6 +40,7 @@ cat > ~/.claude/settings.json << 'EOF'
   "env": {
     "ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic",
     "ANTHROPIC_AUTH_TOKEN": "你的token填这里",
+    "NO_PROXY": "*",
     "ANTHROPIC_MODEL": "deepseek-v4-pro",
     "ANTHROPIC_SMALL_FAST_MODEL": "deepseek-v4-flash",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "deepseek-v4-pro",
