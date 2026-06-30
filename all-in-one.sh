@@ -44,7 +44,10 @@ if ! claude --version &> /dev/null 2>&1; then
     if ! claude --version &> /dev/null 2>&1; then
         echo "[fix] install.cjs失败，curl直下二进制..."
         mkdir -p ~/.local/bin
-        curl -fsSL --connect-timeout 10 --max-time 120 "https://downloads.claude.ai/claude-code-releases/2.1.195/linux-arm64/claude" -o ~/.local/bin/claude 2>/dev/null && chmod +x ~/.local/bin/claude
+        curl -fsSL --connect-timeout 10 --max-time 30 "https://downloads.claude.ai/claude-code-releases/2.1.195/linux-arm64/claude" -o ~/.local/bin/claude 2>/dev/null \
+        || curl -fsSL --connect-timeout 10 --max-time 30 "https://ghproxy.net/https://github.com/anthropics/claude-code/releases/download/v2.1.195/claude-linux-arm64" -o ~/.local/bin/claude 2>/dev/null \
+        || curl -fsSL --connect-timeout 10 --max-time 30 "https://downloads.claude.ai/claude-code-releases/2.1.195/linux-arm64-musl/claude" -o ~/.local/bin/claude 2>/dev/null
+        [ -f ~/.local/bin/claude ] && chmod +x ~/.local/bin/claude
     fi
 fi
 # Termux 修复（2026-06-30 絮絮实测）
