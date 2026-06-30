@@ -48,7 +48,8 @@ fi
 echo "[ok] 二进制下载完成"
 tar xzf "$TMP_DIR/${CC_FILE}" -C "$TMP_DIR/"
 mkdir -p ${BIN_DIR}
-BIN=$(find "$TMP_DIR/" -name "cc-connect*" -type f 2>/dev/null | head -1)
+# 取文件名最长那个（cc-connect-v1.3.4-linux-arm64 比 cc-connect 长，是真二进制）
+BIN=$(find "$TMP_DIR/" -name "cc-connect*" -type f 2>/dev/null | awk '{print length, $0}' | sort -rn | head -1 | cut -d' ' -f2-)
 [ -z "$BIN" ] && { echo "[!] 找不到解压后的二进制"; exit 1; }
 cp "$BIN" ${BIN_DIR}/cc-connect
 chmod +x ${BIN_DIR}/cc-connect

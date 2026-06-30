@@ -121,7 +121,7 @@ fi
 
 tar xzf "$TMP_DIR/${CC_FILE}" -C "$TMP_DIR/"
 mkdir -p ${BIN_DIR}
-BIN=$(find "$TMP_DIR/" -name "cc-connect*" -type f 2>/dev/null | head -1)
+BIN=$(find "$TMP_DIR/" -name "cc-connect*" -type f 2>/dev/null | awk '{print length, $0}' | sort -rn | head -1 | cut -d' ' -f2-)
 [ -z "$BIN" ] && { echo "[!] 找不到二进制"; exit 1; }
 cp "$BIN" ${BIN_DIR}/cc-connect
 chmod +x ${BIN_DIR}/cc-connect
