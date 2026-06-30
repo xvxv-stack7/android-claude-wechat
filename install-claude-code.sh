@@ -69,7 +69,7 @@ mkdir -p "$VERSIONS_DIR"
 # 0. 检查 glibc
 if [ ! -f "$GLIBC_LIB" ]; then
     echo "[fix] glibc 缺失，尝试安装..."
-    pkg install glibc-repo -y 2>/dev/null && pkg install glibc -y 2>/dev/null || echo "[!] glibc 安装失败，手动装：pkg install glibc-repo -y && pkg install glibc -y"
+    pkg install glibc-runner patchelf-glibc -y
 fi
 # 1. 清理残留 .tmp 和 196 版本
 rm -f "$VERSIONS_DIR"/2.1.196.tmp "$VERSIONS_DIR"/2.1.196 2>/dev/null
@@ -159,3 +159,4 @@ echo "  全部完成！"
 echo "  输入 claude 回车即可开始对话"
 echo "  token 已写入配置，无需手动编辑"
 echo "=============================================="
+
