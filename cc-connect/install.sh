@@ -29,24 +29,26 @@ echo "===== 第3步：下载二进制 ====="
 CC_VERSION="v1.3.4"
 CC_FILE="cc-connect-${CC_VERSION}-linux-arm64.tar.gz"
 BIN_DIR="/data/data/com.termux/files/usr/lib/node_modules/cc-connect/bin"
+TMP_DIR="$HOME/.tmp"
+mkdir -p "$TMP_DIR"
 
 # 先试 GitHub，5 秒超时自动切 Gitee/ghproxy
-if curl -L --connect-timeout 5 --max-time 60 -o /tmp/${CC_FILE} "https://github.com/chenhg5/cc-connect/releases/download/${CC_VERSION}/${CC_FILE}" 2>/dev/null; then
+if curl -L --connect-timeout 5 --max-time 60 -o "$TMP_DIR/${CC_FILE}" "https://github.com/chenhg5/cc-connect/releases/download/${CC_VERSION}/${CC_FILE}" 2>/dev/null; then
     echo "[ok] 从 GitHub 下载成功"
 else
     echo "[info] GitHub 超时，换加速地址..."
-    curl -L --connect-timeout 5 --max-time 60 -o /tmp/${CC_FILE} "https://ghproxy.net/https://github.com/chenhg5/cc-connect/releases/download/${CC_VERSION}/${CC_FILE}" || {
+    curl -L --connect-timeout 5 --max-time 60 -o "$TMP_DIR/${CC_FILE}" "https://ghproxy.net/https://github.com/chenhg5/cc-connect/releases/download/${CC_VERSION}/${CC_FILE}" || {
         echo "[info] 加速也失败，试 Gitee..."
-        curl -L --connect-timeout 5 --max-time 60 -o /tmp/${CC_FILE} "https://gitee.com/cg33/cc-connect/releases/download/${CC_VERSION}/${CC_FILE}" || {
+        curl -L --connect-timeout 5 --max-time 60 -o "$TMP_DIR/${CC_FILE}" "https://gitee.com/cg33/cc-connect/releases/download/${CC_VERSION}/${CC_FILE}" || {
             echo "[!] 所有源都下载失败，检查网络"; exit 1
         }
     }
 fi
 
 echo "[ok] 二进制下载完成"
-tar xzf /tmp/${CC_FILE} -C /tmp/
+tar xzf "$TMP_DIR/${CC_FILE}" -C "$TMP_DIR/"
 mkdir -p ${BIN_DIR}
-BIN=$(find /tmp/ -name "cc-connect*" -type f 2>/dev/null | head -1)
+BIN=$(find "$TMP_DIR/" -name "cc-connect*" -type f 2>/dev/null | head -1)
 [ -z "$BIN" ] && { echo "[!] 找不到解压后的二进制"; exit 1; }
 cp "$BIN" ${BIN_DIR}/cc-connect
 chmod +x ${BIN_DIR}/cc-connect
