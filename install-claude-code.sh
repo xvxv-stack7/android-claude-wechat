@@ -33,7 +33,29 @@ if ! command -v claude &> /dev/null; then
     echo "[fix] 二进制缺失，手动下载..."
     node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs" 2>/dev/null || true
 fi
-echo "[ok] Claude Code 安装完成"
+
+# Termux glibc 修复（2026-06-30 絮絮实测）
+GLIBC_LIB="/data/data/com.termux/files/usr/glibc/lib/libc.so"
+WRAPPER="/data/data/com.termux/files/usr/bin/claude"
+# 1. libc.so 是 ld script 不是真 ELF → 换成符号链接
+if [ -f "$GLIBC_LIB" ] && [ ! -L "$GLIBC_LIB" ]; then
+    cp "$GLIBC_LIB" "${GLIBC_LIB}.bak" 2>/dev/null || true
+    ln -sf libc.so.6 "$GLIBC_LIB"
+    echo "[fix] libc.so → libc.so.6 符号链接"
+fi
+# 2. wrapper 清 LD_PRELOAD（Termux bionic preload 与 glibc 冲突）
+if [ -f "$WRAPPER" ]; then
+    sed -i 's/exec "\$bin"/LD_PRELOAD= exec "\$bin"/' "$WRAPPER" 2>/dev/null || true
+    echo "[fix] wrapper LD_PRELOAD 已清"
+fi
+# 3. 拉黑 196 版本（二进制损坏）
+if [ -f "/data/data/com.termux/files/usr/bin/claude" ]; then
+    echo "196" > /data/data/com.termux/files/usr/lib/node_modules/@anthropic-ai/claude-code/.blacklist 2>/dev/null || true
+fi
+# 4. 永不自动更新（RATE_LIMIT=10年）
+sed -i 's/^RATE_LIMIT=.*/RATE_LIMIT=315360000/' "$WRAPPER" 2>/dev/null || true
+
+echo "[ok] Claude Code 安装完成（Termux 修复已应用）"
 
 echo ""
 echo "===== 第5步：写配置 ====="
