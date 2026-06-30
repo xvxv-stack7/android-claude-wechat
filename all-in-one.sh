@@ -36,7 +36,8 @@ echo "[ok] 依赖安装完成"
 echo ""
 echo "===== 第3步：换镜像 + 装 Claude Code ====="
 npm config set registry https://registry.npmmirror.com
-npm install -g --fetch-timeout=120000 @anthropic-ai/claude-code
+npm config set allow-scripts=@anthropic-ai/claude-code --location=user 2>/dev/null || true
+npm install -g --fetch-timeout=120000 @anthropic-ai/claude-code@2.1.195
 if ! claude --version &> /dev/null 2>&1; then
     echo "[fix] 二进制缺失（wrapper在但没Go binary），手动下载..."
     node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs" 2>/dev/null || true

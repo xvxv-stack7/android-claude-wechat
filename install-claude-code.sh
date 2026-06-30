@@ -31,7 +31,8 @@ echo "[ok] npm 镜像已切到国内源"
 
 echo ""
 echo "===== 第4步：安装 Claude Code ====="
-npm install -g --fetch-timeout=120000 @anthropic-ai/claude-code
+npm config set allow-scripts=@anthropic-ai/claude-code --location=user 2>/dev/null || true
+npm install -g --fetch-timeout=120000 @anthropic-ai/claude-code@2.1.195
 # 如果原生二进制没下载成功（国内常见），手动跑postinstall
 if ! claude --version &> /dev/null 2>&1; then
     echo "[fix] 二进制缺失（wrapper在但没Go binary），手动下载..."
