@@ -35,8 +35,13 @@ npm config set allow-scripts=@anthropic-ai/claude-code --location=user 2>/dev/nu
 npm install -g --fetch-timeout=120000 @anthropic-ai/claude-code@2.1.195
 # 如果原生二进制没下载成功（国内常见），手动跑postinstall
 if ! claude --version &> /dev/null 2>&1; then
-    echo "[fix] 二进制缺失（wrapper在但没Go binary），手动下载..."
-    node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs" 2>/dev/null || true
+    echo "[fix] 二进制缺失，手动下载..."
+    node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs" 2>&1 || true
+    if ! claude --version &> /dev/null 2>&1; then
+        echo "[fix] install.cjs失败，curl直下二进制..."
+        mkdir -p ~/.local/bin
+        curl -fsSL --connect-timeout 10 --max-time 120 "https://downloads.claude.ai/claude-code-releases/2.1.195/linux-arm64/claude" -o ~/.local/bin/claude 2>/dev/null && chmod +x ~/.local/bin/claude
+    fi
 fi
 
 # Termux 修复（2026-06-30 絮絮实测）
