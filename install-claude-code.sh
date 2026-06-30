@@ -80,8 +80,19 @@ if [ -f "$GLIBC_LIB" ] && [ ! -L "$GLIBC_LIB" ]; then
     ln -sf libc.so.6 "$GLIBC_LIB"
     echo "[fix] libc.so → libc.so.6"
 fi
-# 5. wrapper 清 LD_PRELOAD（Termux bionic 与 glibc 冲突）
-if [ -f "$WRAPPER" ]; then
+# 5. wrapper 不存在则创建，存在则清 LD_PRELOAD（Termux bionic 与 glibc 冲突）
+if [ ! -f "$WRAPPER" ]; then
+    cat > "$WRAPPER" << 'WRAPPEREOF'
+#!/bin/bash
+VERSIONS_DIR="$HOME/.local/share/claude/versions"
+GLIBC_LIB="/data/data/com.termux/files/usr/glibc/lib/libc.so"
+BIN="$VERSIONS_DIR/2.1.195"
+[ -f "$GLIBC_LIB" ] && export LD_PRELOAD="$GLIBC_LIB"
+exec "$BIN" "$@"
+WRAPPEREOF
+    chmod +x "$WRAPPER"
+    echo "[fix] wrapper 已创建"
+else
     sed -i 's/exec "\$bin"/LD_PRELOAD= exec "\$bin"/' "$WRAPPER" 2>/dev/null || true
     echo "[fix] LD_PRELOAD 已清"
 fi
