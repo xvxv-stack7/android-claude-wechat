@@ -59,7 +59,7 @@ rm -f /data/data/com.termux/files/usr/bin/cc-connect
 ln -s ${BIN_DIR}/cc-connect /data/data/com.termux/files/usr/bin/cc-connect
 # 锁定版本：防止自动跳到不支持安卓的 1.4.1+
 echo "1.3.4" > /data/data/com.termux/files/usr/lib/node_modules/cc-connect/bin/.cc_version 2>/dev/null
-which cc-connect && ls -la /data/data/com.termux/files/usr/lib/node_modules/cc-connect/bin/cc-connect && echo "[ok] 路径修复成功"
+command -v cc-connect && ls -la /data/data/com.termux/files/usr/lib/node_modules/cc-connect/bin/cc-connect && echo "[ok] 路径修复成功"
 
 echo ""
 echo "===== 第5步：写入配置 ====="
@@ -123,8 +123,8 @@ echo "[ok] start.sh 创建完成"
 
 echo ""
 echo "===== 第7步：启动 cc-connect ====="
-which curl > /dev/null 2>&1 || pkg install curl -y
-which proot > /dev/null 2>&1 || { echo "[fix] 装 proot..."; pkg install proot -y 2>/dev/null || true; }
+command -v curl > /dev/null 2>&1 || pkg install curl -y
+command -v proot > /dev/null 2>&1 || { echo "[fix] 装 proot..."; pkg install proot -y 2>/dev/null || true; }
 termux-wake-lock 2>/dev/null || true
 nohup proot -0 \
   -b /data/data/com.termux/files/usr/bin/env:/usr/bin/env \
