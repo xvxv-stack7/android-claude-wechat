@@ -40,10 +40,16 @@ if ! claude --version &> /dev/null 2>&1; then
     if ! claude --version &> /dev/null 2>&1; then
         echo "[fix] install.cjs失败，curl直下二进制..."
         mkdir -p ~/.local/bin
-        curl -fsSL --connect-timeout 10 --max-time 30 "https://downloads.claude.ai/claude-code-releases/2.1.195/linux-arm64/claude" -o ~/.local/bin/claude 2>/dev/null \
-        || curl -fsSL --connect-timeout 10 --max-time 30 "https://github.com/xvxv-stack7/android-claude-wechat/releases/download/binary-2.1.195/claude-2.1.195-arm64" -o ~/.local/bin/claude 2>/dev/null \
-        || curl -fsSL --connect-timeout 10 --max-time 30 "https://downloads.claude.ai/claude-code-releases/2.1.195/linux-arm64-musl/claude" -o ~/.local/bin/claude 2>/dev/null
-        [ -f ~/.local/bin/claude ] && chmod +x ~/.local/bin/claude
+        curl -fsSL --connect-timeout 10 --max-time 300 "https://downloads.claude.ai/claude-code-releases/2.1.195/linux-arm64/claude" -o ~/.local/bin/claude 2>/dev/null \
+        || curl -fsSL --connect-timeout 10 --max-time 300 "https://github.com/xvxv-stack7/android-claude-wechat/releases/download/binary-2.1.195/claude-2.1.195-arm64" -o ~/.local/bin/claude 2>/dev/null \
+        || curl -fsSL --connect-timeout 10 --max-time 300 "https://downloads.claude.ai/claude-code-releases/2.1.195/linux-arm64-musl/claude" -o ~/.local/bin/claude 2>/dev/null
+        if [ -f ~/.local/bin/claude ]; then
+            chmod +x ~/.local/bin/claude
+            echo "[ok] 二进制下载成功"
+        else
+            echo "[!] 二进制下载失败，手动运行："
+            echo "    curl -x http://127.0.0.1:7890 -fsSL --max-time 300 \"https://github.com/xvxv-stack7/android-claude-wechat/releases/download/binary-2.1.195/claude-2.1.195-arm64\" -o ~/.local/bin/claude && chmod +x ~/.local/bin/claude"
+        fi
     fi
 fi
 
