@@ -21,7 +21,7 @@ fi
 
 echo ""
 echo "===== 第2步：装依赖 ====="
-pkg update -y && pkg install nodejs binutils make python3 git -y
+pkg update -y && pkg install nodejs binutils make python3 git proot -y
 echo "[ok] 依赖安装完成"
 
 echo ""
@@ -93,7 +93,14 @@ VERSIONS_DIR="$HOME/.local/share/claude/versions"
 GLIBC_LIB="/data/data/com.termux/files/usr/glibc/lib/libc.so"
 BIN="$VERSIONS_DIR/2.1.195"
 [ -f "$GLIBC_LIB" ] && export LD_PRELOAD="$GLIBC_LIB"
-exec "$BIN" "$@"
+# 先试直接跑，崩了(SIGSYS)自动回退proot
+"$BIN" "$@" 2>/tmp/.claude-err.log
+rc=$?
+if [ $rc -ge 159 ] || grep -q "Bad system call" /tmp/.claude-err.log 2>/dev/null; then
+  rm -f /tmp/.claude-err.log
+  exec proot -0 "$BIN" "$@"
+fi
+rm -f /tmp/.claude-err.log
 WRAPPEREOF
     chmod +x "$WRAPPER"
     echo "[fix] wrapper 已创建"
@@ -159,4 +166,5 @@ echo "  全部完成！"
 echo "  输入 claude 回车即可开始对话"
 echo "  token 已写入配置，无需手动编辑"
 echo "=============================================="
+
 
