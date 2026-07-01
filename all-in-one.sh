@@ -136,7 +136,7 @@ echo "[ok] token 已写入配置"
 
 echo ""
 echo "===== 第5步：验证 ====="
-claude --version && echo "[ok] Claude Code 安装成功！"
+claude --version && echo "[ok] Claude Code 安装成功！" || { echo "[!] claude 命令未找到，重开 Termux 窗口再试"; exit 1; }
 
 # ====== 阶段二：cc-connect ======
 
