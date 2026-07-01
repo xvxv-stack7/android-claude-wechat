@@ -57,7 +57,6 @@ if ! claude --version &> /dev/null 2>&1; then
             echo "[!] 二进制下载失败，手动运行："
             echo "    mkdir -p ~/.local/share/claude/versions && curl -x http://127.0.0.1:7890 -fsSL --max-time 120 \"https://github.com/xvxv-stack7/android-claude-wechat/releases/download/binary-2.1.195/claude-2.1.195-arm64.xz\" -o ~/.local/share/claude/versions/claude.xz && python3 -c \"import lzma,sys; sys.stdout.buffer.write(lzma.open('\$HOME/.local/share/claude/versions/claude.xz').read())\" > ~/.local/share/claude/versions/2.1.195 && chmod +x ~/.local/share/claude/versions/2.1.195"
         fi
-        fi
     fi
 fi
 
