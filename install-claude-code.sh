@@ -85,27 +85,26 @@ if [ -f "$GLIBC_LIB" ] && [ ! -L "$GLIBC_LIB" ]; then
     ln -sf libc.so.6 "$GLIBC_LIB"
     echo "[fix] libc.so → libc.so.6"
 fi
-# 5. wrapper 不存在则创建，存在则清 LD_PRELOAD（Termux bionic 与 glibc 冲突）
+# 5. wrapper：清空 LD_PRELOAD 再启动，Termux bionic preload 不能喂给 glibc 链接器
 if [ ! -f "$WRAPPER" ]; then
     cat > "$WRAPPER" << 'WRAPPEREOF'
 #!/bin/bash
 VERSIONS_DIR="$HOME/.local/share/claude/versions"
-GLIBC_LIB="/data/data/com.termux/files/usr/glibc/lib/libc.so"
 BIN="$VERSIONS_DIR/2.1.195"
-[ -f "$GLIBC_LIB" ] && export LD_PRELOAD="$GLIBC_LIB"
 # 先试直接跑，崩了(SIGSYS)自动回退proot
-"$BIN" "$@" 2>/tmp/.claude-err.log
+LD_PRELOAD= "$BIN" "$@" 2>/tmp/.claude-err.log
 rc=$?
 if [ $rc -ge 159 ] || grep -q "Bad system call" /tmp/.claude-err.log 2>/dev/null; then
   rm -f /tmp/.claude-err.log
-  exec proot -0 "$BIN" "$@"
+  LD_PRELOAD= exec proot -0 "$BIN" "$@"
 fi
 rm -f /tmp/.claude-err.log
 WRAPPEREOF
     chmod +x "$WRAPPER"
     echo "[fix] wrapper 已创建"
 else
-    sed -i 's/exec "\$bin"/LD_PRELOAD= exec "\$bin"/' "$WRAPPER" 2>/dev/null || true
+    sed -i 's/^exec /LD_PRELOAD= exec /' "$WRAPPER" 2>/dev/null || true
+    sed -i 's/^"$BIN"/LD_PRELOAD= "$BIN"/' "$WRAPPER" 2>/dev/null || true
     echo "[fix] LD_PRELOAD 已清"
 fi
 # 6. 永不自动更新（RATE_LIMIT=10年）

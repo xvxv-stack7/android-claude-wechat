@@ -50,18 +50,44 @@ if ! claude --version &> /dev/null 2>&1; then
         [ -f ~/.local/bin/claude ] && chmod +x ~/.local/bin/claude
     fi
 fi
-# Termux 修复（2026-06-30 絮絮实测）
+# Termux 修复（2026-07-01 絮絮实测 v2：wrapper 不能再设 LD_PRELOAD，bionic preload 会喂给 glibc 链接器炸掉）
 GLIBC_LIB="/data/data/com.termux/files/usr/glibc/lib/libc.so"
 WRAPPER="/data/data/com.termux/files/usr/bin/claude"
 VERSIONS_DIR="$HOME/.local/share/claude/versions"
 mkdir -p "$VERSIONS_DIR"
+# 检查 glibc
+if [ ! -f "$GLIBC_LIB" ]; then
+    echo "[fix] glibc 缺失，尝试安装..."
+    pkg install glibc-runner patchelf-glibc -y
+fi
+# 清理残留
 rm -f "$VERSIONS_DIR"/2.1.196.tmp "$VERSIONS_DIR"/2.1.196 2>/dev/null
 echo "2.1.196" >> "$VERSIONS_DIR/.blocklist" 2>/dev/null
 echo "2.1.195" > "$VERSIONS_DIR/.verified" 2>/dev/null
-[ -f "$GLIBC_LIB" ] && [ ! -L "$GLIBC_LIB" ] && { cp "$GLIBC_LIB" "${GLIBC_LIB}.bak" 2>/dev/null; ln -sf libc.so.6 "$GLIBC_LIB"; }
-[ -f "$WRAPPER" ] && { sed -i 's/exec "\$bin"/LD_PRELOAD= exec "\$bin"/' "$WRAPPER" 2>/dev/null; }
-sed -i 's/^RATE_LIMIT=.*/RATE_LIMIT=315360000/' "$WRAPPER" 2>/dev/null
-echo "[ok] Claude Code 安装完成（Termux 修复已应用）"
+echo "[fix] 196 已拉黑，195 已验证"
+# libc.so 是 ld script 不是真 ELF → 换成符号链接
+if [ -f "$GLIBC_LIB" ] && [ ! -L "$GLIBC_LIB" ]; then
+    cp "$GLIBC_LIB" "${GLIBC_LIB}.bak" 2>/dev/null || true
+    ln -sf libc.so.6 "$GLIBC_LIB"
+    echo "[fix] libc.so → libc.so.6"
+fi
+# wrapper：不管 npm 有没有创建，统一用我们的干净版本覆盖
+cat > "$WRAPPER" << 'WRAPPEREOF'
+#!/bin/bash
+VERSIONS_DIR="$HOME/.local/share/claude/versions"
+BIN="$VERSIONS_DIR/2.1.195"
+LD_PRELOAD= "$BIN" "$@" 2>/tmp/.claude-err.log
+rc=$?
+if [ $rc -ge 159 ] || grep -q "Bad system call" /tmp/.claude-err.log 2>/dev/null; then
+  rm -f /tmp/.claude-err.log
+  LD_PRELOAD= exec proot -0 "$BIN" "$@"
+fi
+rm -f /tmp/.claude-err.log
+WRAPPEREOF
+chmod +x "$WRAPPER"
+# 永不自动更新
+sed -i 's/^RATE_LIMIT=.*/RATE_LIMIT=315360000/' "$WRAPPER" 2>/dev/null || true
+echo "[fix] wrapper 已创建（LD_PRELOAD 已清）"
 
 echo ""
 echo "===== 第4步：写配置 ====="
