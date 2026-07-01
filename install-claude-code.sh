@@ -84,21 +84,15 @@ if [ -f "$GLIBC_LIB" ] && [ ! -L "$GLIBC_LIB" ]; then
     ln -sf libc.so.6 "$GLIBC_LIB"
     echo "[fix] libc.so → libc.so.6"
 fi
-# 5. wrapper：无条件覆盖，npm 自带的只有一行 exec 没有回退逻辑
+# 5. wrapper：无条件覆盖，统一走 proot，不再试直接跑（各手机内核差异太大）
 cat > "$WRAPPER" << 'WRAPPEREOF'
 #!/data/data/com.termux/files/usr/bin/bash
-VERSIONS_DIR="$HOME/.local/share/claude/versions"
-BIN="$VERSIONS_DIR/2.1.195"
-# 先试直接跑，崩了自动回退proot
-LD_PRELOAD= "$BIN" "$@" 2>/tmp/.claude-err.log
-rc=$?
-if [ $rc -ne 0 ] || grep -q "Bad system" /tmp/.claude-err.log 2>/dev/null; then
-  rm -f /tmp/.claude-err.log
-  LD_PRELOAD= exec proot -0 "$BIN" "$@"
-fi
-rm -f /tmp/.claude-err.log
+BIN="$HOME/.local/share/claude/versions/2.1.195"
+LD_PRELOAD= exec proot -0 "$BIN" "$@"
 WRAPPEREOF
 chmod +x "$WRAPPER"
+# 清理 npm 可能创建的旧 wrapper（~/.local/bin/claude 优先级更高会挡住我们）
+rm -f "$HOME/.local/bin/claude" 2>/dev/null
 echo "[fix] wrapper 已覆盖"
 # 6. 永不自动更新（RATE_LIMIT=10年）
 sed -i 's/^RATE_LIMIT=.*/RATE_LIMIT=315360000/' "$WRAPPER" 2>/dev/null || true

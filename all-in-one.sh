@@ -73,21 +73,15 @@ if [ -f "$GLIBC_LIB" ] && [ ! -L "$GLIBC_LIB" ]; then
 fi
 # wrapper：不管 npm 有没有创建，统一用我们的干净版本覆盖
 cat > "$WRAPPER" << 'WRAPPEREOF'
-#!/bin/bash
-VERSIONS_DIR="$HOME/.local/share/claude/versions"
-BIN="$VERSIONS_DIR/2.1.195"
-LD_PRELOAD= "$BIN" "$@" 2>/tmp/.claude-err.log
-rc=$?
-if [ $rc -ne 0 ] || grep -q "Bad system" /tmp/.claude-err.log 2>/dev/null; then
-  rm -f /tmp/.claude-err.log
-  LD_PRELOAD= exec proot -0 "$BIN" "$@"
-fi
-rm -f /tmp/.claude-err.log
+#!/data/data/com.termux/files/usr/bin/bash
+BIN="$HOME/.local/share/claude/versions/2.1.195"
+LD_PRELOAD= exec proot -0 "$BIN" "$@"
 WRAPPEREOF
 chmod +x "$WRAPPER"
+rm -f "$HOME/.local/bin/claude" 2>/dev/null
 # 永不自动更新
 sed -i 's/^RATE_LIMIT=.*/RATE_LIMIT=315360000/' "$WRAPPER" 2>/dev/null || true
-echo "[fix] wrapper 已创建（LD_PRELOAD 已清）"
+echo "[fix] wrapper 已覆盖"
 
 echo ""
 echo "===== 第4步：写配置 ====="
