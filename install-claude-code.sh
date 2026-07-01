@@ -84,10 +84,9 @@ if [ -f "$GLIBC_LIB" ] && [ ! -L "$GLIBC_LIB" ]; then
     ln -sf libc.so.6 "$GLIBC_LIB"
     echo "[fix] libc.so → libc.so.6"
 fi
-# 5. wrapper：清空 LD_PRELOAD 再启动，Termux bionic preload 不能喂给 glibc 链接器
-if [ ! -f "$WRAPPER" ]; then
-    cat > "$WRAPPER" << 'WRAPPEREOF'
-#!/bin/bash
+# 5. wrapper：无条件覆盖，npm 自带的只有一行 exec 没有回退逻辑
+cat > "$WRAPPER" << 'WRAPPEREOF'
+#!/data/data/com.termux/files/usr/bin/bash
 VERSIONS_DIR="$HOME/.local/share/claude/versions"
 BIN="$VERSIONS_DIR/2.1.195"
 # 先试直接跑，崩了(SIGSYS)自动回退proot
@@ -99,13 +98,8 @@ if [ $rc -ge 159 ] || grep -q "Bad system call" /tmp/.claude-err.log 2>/dev/null
 fi
 rm -f /tmp/.claude-err.log
 WRAPPEREOF
-    chmod +x "$WRAPPER"
-    echo "[fix] wrapper 已创建"
-else
-    sed -i 's/^exec /LD_PRELOAD= exec /' "$WRAPPER" 2>/dev/null || true
-    sed -i 's/^"$BIN"/LD_PRELOAD= "$BIN"/' "$WRAPPER" 2>/dev/null || true
-    echo "[fix] LD_PRELOAD 已清"
-fi
+chmod +x "$WRAPPER"
+echo "[fix] wrapper 已覆盖"
 # 6. 永不自动更新（RATE_LIMIT=10年）
 sed -i 's/^RATE_LIMIT=.*/RATE_LIMIT=315360000/' "$WRAPPER" 2>/dev/null || true
 
