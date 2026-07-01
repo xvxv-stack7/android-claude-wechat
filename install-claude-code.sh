@@ -93,6 +93,7 @@ WRAPPEREOF
 chmod +x "$WRAPPER"
 # 清理 npm 可能创建的旧 wrapper（~/.local/bin/claude 优先级更高会挡住我们）
 rm -f "$HOME/.local/bin/claude" 2>/dev/null
+hash -r 2>/dev/null || true
 echo "[fix] wrapper 已覆盖"
 # 6. 永不自动更新（RATE_LIMIT=10年）
 sed -i 's/^RATE_LIMIT=.*/RATE_LIMIT=315360000/' "$WRAPPER" 2>/dev/null || true

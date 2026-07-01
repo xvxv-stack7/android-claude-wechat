@@ -92,6 +92,7 @@ LD_PRELOAD= exec proot -0 "$BIN" "$@"
 WRAPPEREOF
 chmod +x "$WRAPPER"
 rm -f "$HOME/.local/bin/claude" 2>/dev/null
+hash -r 2>/dev/null || true
 echo "[fix] wrapper 已覆盖"
 
 echo ""
