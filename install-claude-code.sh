@@ -89,10 +89,10 @@ cat > "$WRAPPER" << 'WRAPPEREOF'
 #!/data/data/com.termux/files/usr/bin/bash
 VERSIONS_DIR="$HOME/.local/share/claude/versions"
 BIN="$VERSIONS_DIR/2.1.195"
-# 先试直接跑，崩了(SIGSYS)自动回退proot
+# 先试直接跑，崩了自动回退proot
 LD_PRELOAD= "$BIN" "$@" 2>/tmp/.claude-err.log
 rc=$?
-if [ $rc -ge 159 ] || grep -q "Bad system call" /tmp/.claude-err.log 2>/dev/null; then
+if [ $rc -ne 0 ] || grep -q "Bad system" /tmp/.claude-err.log 2>/dev/null; then
   rm -f /tmp/.claude-err.log
   LD_PRELOAD= exec proot -0 "$BIN" "$@"
 fi
