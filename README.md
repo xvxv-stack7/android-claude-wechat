@@ -16,9 +16,7 @@
 2. F-Droid 里搜 **Termux** 安装
 3. 打开 Termux
 
-> **有代理？** 跑脚本前先设（换成你的端口）：`export http_proxy=http://127.0.0.1:7890 && export https_proxy=http://127.0.0.1:7890`
-> 不知道端口？常见：Clash→7890 / v2ray→10809 / Shadowsocks→1080。
-> **curl链接打不开？** 把 `raw.githubusercontent.com` 换成 `ghproxy.net/https://raw.githubusercontent.com`。脚本内部自动加了ghproxy兜底，只是入口curl需要手动换一下。
+> **网络不好下载慢？** 脚本内置了国内镜像加速，一般不需要额外配置。如果入口 curl 打不开，把 `raw.githubusercontent.com` 换成 `ghproxy.net/https://raw.githubusercontent.com` 再试。
 
 ## 一条命令
 
@@ -50,7 +48,7 @@ curl -sSL https://raw.githubusercontent.com/xvxv-stack7/android-claude-wechat/ma
 ```
 android-claude-wechat/
 ├── README.md                         # 你在这
-├── install-claude-code.md            # 详细安装教程（含有/无代理两版）
+├── install-claude-code.md            # 详细安装教程
 ├── cc-connect/
 │   ├── README.md                     # DNS排查 + 常见报错
 │   ├── config.toml.example           # 配置模板
