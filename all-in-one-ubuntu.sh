@@ -171,6 +171,22 @@ echo "请用微信扫描二维码..."
 export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 cc-connect weixin setup --config ~/.cc-connect/config.toml
 
+# 补偿逻辑：扫码成功但 token 未自动写入时，尝试从日志恢复
+CURRENT_TOKEN=$(grep -oP 'token\s*=\s*"\K[^"]+' ~/.cc-connect/config.toml 2>/dev/null | head -1)
+if [ "$CURRENT_TOKEN" = "占位符" ] || [ -z "$CURRENT_TOKEN" ]; then
+    echo "[!] token 未自动写入，尝试从 cc-connect 输出中恢复..."
+    LOG_TOKEN=$(grep -oP 'token["\s:=]+\K[0-9a-f]{20,}' ~/.cc-connect/cc-connect.log 2>/dev/null | tail -1)
+    if [ -n "$LOG_TOKEN" ]; then
+        sed -i "s/token = \"占位符\"/token = \"$LOG_TOKEN\"/" ~/.cc-connect/config.toml
+        echo "[ok] 已从日志恢复 token"
+    else
+        echo "[!] 自动恢复失败，请重新扫码：proot -0 cc-connect weixin setup --config ~/.cc-connect/config.toml"
+        echo "    如果多次扫码无效，请到 Gitee 提 Issue 附上这条日志："
+        echo "    tail -20 ~/.cc-connect/cc-connect.log"
+    fi
+fi
+
+
 echo ""
 echo "=============================================="
 echo "  测试完成！exit 退出容器。"
