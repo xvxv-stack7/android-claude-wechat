@@ -66,14 +66,25 @@ MAIN="https://mirrors.tuna.tsinghua.edu.cn/termux/apt/termux-main"
 ROOT="https://mirrors.tuna.tsinghua.edu.cn/termux/apt/termux-root"
 X11="https://mirrors.tuna.tsinghua.edu.cn/termux/apt/termux-x11"
 MIRROREOF
-echo "[ok] Termux 源已切到清华镜像"
+	# 验证镜像源是否生效（新版 Termux 可能不认直接写入的配置文件）
+	if pkg update -y > /dev/null 2>&1; then
+		echo "[ok] Termux 源已切到清华镜像"
+	else
+		echo "[!] 镜像源未生效，请先手动配置："
+		echo "    1. 新开一个 Termux 窗口，运行: termux-change-repo"
+		echo "    2. 选择清华镜像 (Tsinghua)"
+		echo "    3. 回到这个窗口重新运行: bash all-in-one.sh"
+		echo ""
+		echo "    配好源之后直接重新跑一键命令就行，不需要额外操作。"
+		exit 1
+	fi
 
 echo ""
 echo "===== 第3步：装依赖 ====="
 # 防止 dpkg 配置文件交互弹窗（保留用户已修改的配置）
 mkdir -p /data/data/com.termux/files/usr/etc/apt/apt.conf.d 2>/dev/null
 echo 'Dpkg::Options {"--force-confdef"; "--force-confold";};' > /data/data/com.termux/files/usr/etc/apt/apt.conf.d/99-noninteractive.conf
-pkg update -y && pkg install nodejs binutils make python3 git proot ca-certificates curl -y
+pkg install nodejs binutils make python3 git proot ca-certificates curl -y
 # 修复 Termux 经典问题：openssl 升级后 node 符号不匹配
 if ! node --version >/dev/null 2>&1; then
     echo "[fix] node 与 openssl 版本不匹配，修复中..."
