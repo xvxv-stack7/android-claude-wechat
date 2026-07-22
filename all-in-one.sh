@@ -4,6 +4,26 @@
 # 全程两次暂停：拿token、扫码
 # ============================================
 set -e
+export DEBIAN_FRONTEND=noninteractive
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# 自动反馈：出错时自动提交 Gitee Issue
+source "$SCRIPT_DIR/auto-feedback.sh" 2>/dev/null || {
+    source <(curl -sL "https://gitee.com/xvxv663/android-claude-wechat/raw/master/auto-feedback.sh") 2>/dev/null || true
+}
+
+# 先诊断（--pre 安装前模式：未安装的组件只警告不致命）
+if [ -f "$SCRIPT_DIR/doctor.sh" ]; then
+    set +e
+    bash "$SCRIPT_DIR/doctor.sh" --pre
+    DR_EXIT=$?
+    set -e
+    if [ "$DR_EXIT" -eq 2 ]; then
+        echo "[!] 环境有致命问题，请先修复再继续"
+        exit 1
+    fi
+fi
 
 echo ""
 echo "=============================================="
@@ -29,12 +49,40 @@ else
 fi
 
 echo ""
-echo "===== 第2步：装依赖 ====="
+echo "===== 第2步：换 Termux 国内源 ====="
+# 1. 写 sources.list（兜底，兼容所有版本）
+for SRC in "$PREFIX/etc/apt/sources.list" "$PREFIX/etc/apt/sources.list.d/glibc.list"; do
+    if [ -f "$SRC" ]; then
+        sed -i -e 's@https\?://[^/]*/termux/apt@https://mirrors.tuna.tsinghua.edu.cn/termux/apt@g' \
+               -e 's@https\?://[^/]*/apt@https://mirrors.tuna.tsinghua.edu.cn/termux/apt@g' "$SRC" 2>/dev/null
+    fi
+done
+# 2. 写 mirror 配置（新版 Termux 的镜像选择系统）
+MIRROR_DIR="$PREFIX/etc/termux/mirrors"
+mkdir -p "$MIRROR_DIR" 2>/dev/null
+cat > "$MIRROR_DIR/default" << 'MIRROREOF'
+WEIGHT=10
+MAIN="https://mirrors.tuna.tsinghua.edu.cn/termux/apt/termux-main"
+ROOT="https://mirrors.tuna.tsinghua.edu.cn/termux/apt/termux-root"
+X11="https://mirrors.tuna.tsinghua.edu.cn/termux/apt/termux-x11"
+MIRROREOF
+echo "[ok] Termux 源已切到清华镜像"
+
+echo ""
+echo "===== 第3步：装依赖 ====="
+# 防止 dpkg 配置文件交互弹窗（保留用户已修改的配置）
+mkdir -p /data/data/com.termux/files/usr/etc/apt/apt.conf.d 2>/dev/null
+echo 'Dpkg::Options {"--force-confdef"; "--force-confold";};' > /data/data/com.termux/files/usr/etc/apt/apt.conf.d/99-noninteractive.conf
 pkg update -y && pkg install nodejs binutils make python3 git proot ca-certificates curl -y
+# 修复 Termux 经典问题：openssl 升级后 node 符号不匹配
+if ! node --version >/dev/null 2>&1; then
+    echo "[fix] node 与 openssl 版本不匹配，修复中..."
+    pkg upgrade -y 2>/dev/null || pkg install --reinstall openssl nodejs -y 2>/dev/null
+fi
 echo "[ok] 依赖安装完成"
 
 echo ""
-echo "===== 第3步：换镜像 + 装 Claude Code ====="
+echo "===== 第4步：换 npm 镜像 + 装 Claude Code ====="
 npm config set registry https://registry.npmmirror.com
 npm config set allow-scripts=@anthropic-ai/claude-code --location=user 2>/dev/null || true
 npm install -g --fetch-timeout=120000 @anthropic-ai/claude-code@2.1.195
@@ -44,11 +92,18 @@ if ! claude --version &> /dev/null 2>&1; then
     if ! claude --version &> /dev/null 2>&1; then
         echo "[fix] install.cjs失败，curl直下二进制..."
         mkdir -p ~/.local/share/claude/versions ~/.local/bin
-        # 优先下载47MB xz压缩包（快），失败再试官方CDN直下241MB
-        if curl -fsSL --connect-timeout 10 --max-time 120 "https://github.com/xvxv-stack7/android-claude-wechat/releases/download/binary-2.1.195/claude-2.1.195-arm64.xz" -o ~/.local/share/claude/versions/claude.xz 2>/dev/null; then
-            python3 -c "import lzma,sys; sys.stdout.buffer.write(lzma.open('$HOME/.local/share/claude/versions/claude.xz').read())" > ~/.local/share/claude/versions/2.1.195 2>/dev/null
-            rm -f ~/.local/share/claude/versions/claude.xz
-            echo "[ok] xz压缩包下载解压成功"
+        # 优先本地 bin/ 目录（git clone 已带回），真正免下载
+        SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+        if [ -f "$SCRIPT_DIR/bin/claude-2.1.195-arm64.xz" ]; then
+            python3 -c "import lzma,sys; sys.stdout.buffer.write(lzma.open('$SCRIPT_DIR/bin/claude-2.1.195-arm64.xz').read())" > ~/.local/share/claude/versions/2.1.195 2>/dev/null
+            echo "[ok] 本地 xz 解压成功（Gitee 仓库自带）"
+        fi
+        if [ ! -f ~/.local/share/claude/versions/2.1.195 ]; then
+            if curl -fsSL --connect-timeout 10 --max-time 120 "https://github.com/xvxv-stack7/android-claude-wechat/releases/download/binary-2.1.195/claude-2.1.195-arm64.xz" -o ~/.local/share/claude/versions/claude.xz 2>/dev/null; then
+                python3 -c "import lzma,sys; sys.stdout.buffer.write(lzma.open('$HOME/.local/share/claude/versions/claude.xz').read())" > ~/.local/share/claude/versions/2.1.195 2>/dev/null
+                rm -f ~/.local/share/claude/versions/claude.xz
+                echo "[ok] GitHub xz 压缩包下载解压成功"
+            fi
         fi
         if [ ! -f ~/.local/share/claude/versions/2.1.195 ]; then
             curl -fsSL --connect-timeout 10 --max-time 300 "https://downloads.claude.ai/claude-code-releases/2.1.195/linux-arm64/claude" -o ~/.local/share/claude/versions/2.1.195 2>/dev/null \
@@ -58,8 +113,10 @@ if ! claude --version &> /dev/null 2>&1; then
             chmod +x ~/.local/share/claude/versions/2.1.195
             echo "[ok] 二进制就绪"
         else
-            echo "[!] 二进制下载失败，手动运行："
-            echo "    mkdir -p ~/.local/share/claude/versions && curl -x http://127.0.0.1:7890 -fsSL --max-time 120 \"https://github.com/xvxv-stack7/android-claude-wechat/releases/download/binary-2.1.195/claude-2.1.195-arm64.xz\" -o ~/.local/share/claude/versions/claude.xz && python3 -c \"import lzma,sys; sys.stdout.buffer.write(lzma.open('\$HOME/.local/share/claude/versions/claude.xz').read())\" > ~/.local/share/claude/versions/2.1.195 && chmod +x ~/.local/share/claude/versions/2.1.195"
+            echo "[!] 二进制下载失败，手动操作："
+            echo "    浏览器打开 https://gitee.com/xvxv663/android-claude-wechat"
+            echo "    下载仓库里 bin/claude-2.1.195-arm64.xz 放到 ~/.local/share/claude/versions/"
+            echo "    然后运行: cd ~/.local/share/claude/versions && python3 -c \"import lzma,sys; sys.stdout.buffer.write(lzma.open('claude-2.1.195-arm64.xz').read())\" > 2.1.195 && chmod +x 2.1.195"
         fi
     fi
 fi
@@ -71,7 +128,7 @@ mkdir -p "$VERSIONS_DIR"
 # 检查 glibc
 if [ ! -f "$GLIBC_LIB" ]; then
     echo "[fix] glibc 缺失，尝试安装..."
-    pkg install glibc-runner patchelf-glibc -y
+    pkg install glibc-runner patchelf-glibc -y 2>/dev/null || echo "[warn] glibc-runner 安装失败，跳过（不影响运行）"
 fi
 # 清理残留
 rm -f "$VERSIONS_DIR"/2.1.196.tmp "$VERSIONS_DIR"/2.1.196 2>/dev/null
@@ -96,7 +153,7 @@ hash -r 2>/dev/null || true
 echo "[fix] wrapper 已覆盖"
 
 echo ""
-echo "===== 第4步：写配置 ====="
+echo "===== 第5步：写配置 ====="
 mkdir -p ~/.claude
 cat > ~/.claude/settings.json << 'EOF'
 {
@@ -136,13 +193,13 @@ sed -i "s/你的token填这里/${USER_TOKEN}/" ~/.claude/settings.json
 echo "[ok] token 已写入配置"
 
 echo ""
-echo "===== 第5步：验证 ====="
+echo "===== 第6步：验证 ====="
 claude --version && echo "[ok] Claude Code 安装成功！" || { echo "[!] claude 命令未找到，重开 Termux 窗口再试"; exit 1; }
 
 # ====== 阶段二：cc-connect ======
 
 echo ""
-echo "===== 第6步：装 cc-connect ====="
+echo "===== 第7步：装 cc-connect ====="
 npm install -g cc-connect --ignore-scripts
 
 CC_VERSION="v1.3.4"
@@ -151,14 +208,17 @@ BIN_DIR="/data/data/com.termux/files/usr/lib/node_modules/cc-connect/bin"
 TMP_DIR="$HOME/.tmp"
 mkdir -p "$TMP_DIR"
 
-if curl -L --connect-timeout 5 --max-time 60 -o "$TMP_DIR/${CC_FILE}" "https://github.com/chenhg5/cc-connect/releases/download/${CC_VERSION}/${CC_FILE}" 2>/dev/null; then
-    echo "[ok] 从 GitHub 下载成功"
+# 优先 Gitee（国内直连最稳），其次 GitHub，最后 ghproxy 加速
+if curl -L --connect-timeout 5 --max-time 60 -o "$TMP_DIR/${CC_FILE}" "https://gitee.com/cg33/cc-connect/releases/download/${CC_VERSION}/${CC_FILE}" 2>/dev/null; then
+    echo "[ok] 从 Gitee 下载成功"
 else
-    echo "[info] 换加速..."
-    curl -L --connect-timeout 5 --max-time 60 -o "$TMP_DIR/${CC_FILE}" "https://ghproxy.net/https://github.com/chenhg5/cc-connect/releases/download/${CC_VERSION}/${CC_FILE}" || {
-        echo "[info] 试 Gitee..."
-        curl -L --connect-timeout 5 --max-time 60 -o "$TMP_DIR/${CC_FILE}" "https://gitee.com/cg33/cc-connect/releases/download/${CC_VERSION}/${CC_FILE}" || { echo "[!] 下载失败"; exit 1; }
-    }
+    echo "[info] Gitee 失败，试 GitHub..."
+    if curl -L --connect-timeout 5 --max-time 60 -o "$TMP_DIR/${CC_FILE}" "https://github.com/chenhg5/cc-connect/releases/download/${CC_VERSION}/${CC_FILE}" 2>/dev/null; then
+        echo "[ok] 从 GitHub 下载成功"
+    else
+        echo "[info] 换 ghproxy 加速..."
+        curl -L --connect-timeout 5 --max-time 60 -o "$TMP_DIR/${CC_FILE}" "https://ghproxy.net/https://github.com/chenhg5/cc-connect/releases/download/${CC_VERSION}/${CC_FILE}" || { echo "[!] 下载失败"; exit 1; }
+    fi
 fi
 
 tar xzf "$TMP_DIR/${CC_FILE}" -C "$TMP_DIR/"
@@ -172,7 +232,7 @@ ln -s ${BIN_DIR}/cc-connect /data/data/com.termux/files/usr/bin/cc-connect
 echo "[ok] cc-connect 安装完成"
 
 echo ""
-echo "===== 第7步：写 cc-connect 配置 ====="
+echo "===== 第8步：写 cc-connect 配置 ====="
 mkdir -p ~/.cc-connect
 cat > ~/.cc-connect/config.toml << 'TOML'
 data_dir = ""
@@ -229,7 +289,7 @@ chmod +x ~/.cc-connect/start.sh
 echo "[ok] cc-connect 配置完成"
 
 echo ""
-echo "===== 第8步：启动 cc-connect ====="
+echo "===== 第9步：启动 cc-connect ====="
 termux-wake-lock 2>/dev/null || true
 nohup proot -0 \
   -b /data/data/com.termux/files/usr/bin/env:/usr/bin/env \
@@ -242,43 +302,16 @@ if tail -10 ~/.cc-connect/cc-connect.log | grep -qE "ready-for-poll|platform rea
 else
     echo "[warn] 日志未见就绪标志，查看：tail ~/.cc-connect/cc-connect.log"
 fi
-# DNS 自检：Go 解析器走 [::1]:53 在老设备/某些网络环境下会失败
-if tail -30 ~/.cc-connect/cc-connect.log | grep -q "connection refused"; then
-    echo ""
-    echo "[!] 检测到 DNS 解析失败（常见于部分网络环境）"
-    echo "    已自动重启用修复版命令..."
-    pkill -f "cc-connect" 2>/dev/null
-    sleep 2
-    nohup proot -0       -b /data/data/com.termux/files/usr/etc/resolv.conf:/etc/resolv.conf       -b /data/data/com.termux/files/usr/etc/hosts:/etc/hosts       ~/.cc-connect/start.sh < /dev/null > ~/.cc-connect/cc-connect.log 2>&1 &
-    sleep 3
-    echo "[ok] 已用 DNS 绑定重启"
-fi
 
 echo ""
-echo "===== 第9步：扫码绑定微信 ====="
+echo "===== 第10步：扫码绑定微信 ====="
 echo ""
 echo "=============================================="
 echo "  即将弹出二维码，用微信扫描"
 echo "=============================================="
 echo ""
 export SSL_CERT_FILE=/data/data/com.termux/files/usr/etc/tls/cert.pem
-proot -0 -b /data/data/com.termux/files/usr/etc/resolv.conf:/etc/resolv.conf -b /data/data/com.termux/files/usr/etc/hosts:/etc/hosts cc-connect weixin setup --config ~/.cc-connect/config.toml
-
-# 补偿逻辑：扫码成功但 token 未自动写入时，尝试从日志恢复
-CURRENT_TOKEN=$(grep -oP 'token\s*=\s*"\K[^"]+' ~/.cc-connect/config.toml 2>/dev/null | head -1)
-if [ "$CURRENT_TOKEN" = "占位符" ] || [ -z "$CURRENT_TOKEN" ]; then
-    echo "[!] token 未自动写入，尝试从 cc-connect 输出中恢复..."
-    # 尝试从 cc-connect 最近日志中提取 token
-    LOG_TOKEN=$(grep -oP 'token["\s:=]+\K[0-9a-f]{20,}' ~/.cc-connect/cc-connect.log 2>/dev/null | tail -1)
-    if [ -n "$LOG_TOKEN" ]; then
-        sed -i "s/token = \"占位符\"/token = \"$LOG_TOKEN\"/" ~/.cc-connect/config.toml
-        echo "[ok] 已从日志恢复 token"
-    else
-        echo "[!] 自动恢复失败，请重新扫码：proot -0 -b /data/data/com.termux/files/usr/etc/resolv.conf:/etc/resolv.conf -b /data/data/com.termux/files/usr/etc/hosts:/etc/hosts cc-connect weixin setup --config ~/.cc-connect/config.toml"
-        echo "    如果多次扫码无效，请到 Gitee 提 Issue 附上这条日志："
-        echo "    tail -20 ~/.cc-connect/cc-connect.log"
-    fi
-fi
+proot -0 cc-connect weixin setup --config ~/.cc-connect/config.toml
 
 echo ""
 echo "===== 验证 ====="
@@ -289,5 +322,5 @@ echo ""
 echo "=============================================="
 echo "  全部完成！"
 echo "  现在用微信发条消息试试"
-echo "  仓库：github.com/xvxv-stack7/android-claude-wechat"
+echo "  仓库：gitee.com/xvxv663/android-claude-wechat"
 echo "=============================================="
