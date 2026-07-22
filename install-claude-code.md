@@ -1,6 +1,6 @@
 Termux 安装 Claude Code 完整教程
 ====================================
-最后更新：2026-06-30
+最后更新：2026-07-02
 
 
 路线A：有代理（推荐，一步过）
@@ -56,22 +56,52 @@ A7. 如果 claude 命令找不到，手动下载二进制：
 node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs"
 --- 结束复制 ---
 
-A8. Termux 修复（glibc + LD_PRELOAD + 196拉黑 + 永不更新）：
+A8. Termux 修复（glibc + LD_PRELOAD + 196拉黑 + wrapper覆盖）：
 
 --- 开始复制 ---
 GLIBC_LIB="/data/data/com.termux/files/usr/glibc/lib/libc.so"
 WRAPPER="/data/data/com.termux/files/usr/bin/claude"
 VERSIONS_DIR="$HOME/.local/share/claude/versions"
 mkdir -p "$VERSIONS_DIR"
+# 检查 glibc
+if [ ! -f "$GLIBC_LIB" ]; then
+    echo "[fix] glibc 缺失，尝试安装..."
+    pkg install glibc-runner patchelf-glibc -y
+fi
+# 清理残留 .tmp 和 196 版本
 rm -f "$VERSIONS_DIR"/2.1.196.tmp "$VERSIONS_DIR"/2.1.196
+# 拉黑 196，不反复下载
 echo "2.1.196" >> "$VERSIONS_DIR/.blocklist"
+# 195 设为已验证，跳过 smoke test
 echo "2.1.195" > "$VERSIONS_DIR/.verified"
-[ -f "$GLIBC_LIB" ] && [ ! -L "$GLIBC_LIB" ] && { cp "$GLIBC_LIB" "${GLIBC_LIB}.bak"; ln -sf libc.so.6 "$GLIBC_LIB"; }
-sed -i 's/exec "\$bin"/LD_PRELOAD= exec "\$bin"/' "$WRAPPER" 2>/dev/null
-sed -i 's/^RATE_LIMIT=.*/RATE_LIMIT=315360000/' "$WRAPPER" 2>/dev/null
+# libc.so 是 ld script 不是真 ELF → 换成符号链接
+if [ -f "$GLIBC_LIB" ] && [ ! -L "$GLIBC_LIB" ]; then
+    cp "$GLIBC_LIB" "${GLIBC_LIB}.bak"
+    ln -sf libc.so.6 "$GLIBC_LIB"
+fi
+# wrapper：无条件覆盖，统一走 proot
+cat > "$WRAPPER" << 'WRAPPEREOF'
+#!/data/data/com.termux/files/usr/bin/bash
+BIN="$HOME/.local/share/claude/versions/2.1.195"
+LD_PRELOAD= exec proot -0 "$BIN" "$@"
+WRAPPEREOF
+chmod +x "$WRAPPER"
+# 清理 npm 可能创建的旧 wrapper（~/.local/bin 优先级更高会挡住我们）
+rm -f "$HOME/.local/bin/claude"
+hash -r 2>/dev/null || true
 --- 结束复制 ---
 
-A9. 写 settings.json（先替换 sk-你的key，再整段粘贴）：
+A9. 验证 wrapper 生效：
+
+--- 开始复制 ---
+command -v claude
+--- 结束复制 ---
+
+   应该输出 /data/data/com.termux/files/usr/bin/claude。
+   如果输出了 ~/.local/bin/claude，说明旧文件没删干净，跑：
+   rm -f ~/.local/bin/claude && hash -r
+
+A10. 写 settings.json（先替换 sk-你的key，再整段粘贴）：
 
 --- 开始复制（替换 sk-你的key 后整段粘贴） ---
 mkdir -p ~/.claude
@@ -98,7 +128,7 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 --- 结束复制 ---
 
-A10. 新开一个 Termux 窗口，输入 claude 回车。
+A11. 新开一个 Termux 窗口，输入 claude 回车。
 
 
 路线B：无代理（可能断，多试几次）
@@ -139,22 +169,52 @@ B6. 如果 claude 命令找不到，手动下载二进制：
 node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs"
 --- 结束复制 ---
 
-B7. Termux 修复（glibc + LD_PRELOAD + 196拉黑 + 永不更新）：
+B7. Termux 修复（glibc + LD_PRELOAD + 196拉黑 + wrapper覆盖）：
 
 --- 开始复制 ---
 GLIBC_LIB="/data/data/com.termux/files/usr/glibc/lib/libc.so"
 WRAPPER="/data/data/com.termux/files/usr/bin/claude"
 VERSIONS_DIR="$HOME/.local/share/claude/versions"
 mkdir -p "$VERSIONS_DIR"
+# 检查 glibc
+if [ ! -f "$GLIBC_LIB" ]; then
+    echo "[fix] glibc 缺失，尝试安装..."
+    pkg install glibc-runner patchelf-glibc -y
+fi
+# 清理残留 .tmp 和 196 版本
 rm -f "$VERSIONS_DIR"/2.1.196.tmp "$VERSIONS_DIR"/2.1.196
+# 拉黑 196，不反复下载
 echo "2.1.196" >> "$VERSIONS_DIR/.blocklist"
+# 195 设为已验证，跳过 smoke test
 echo "2.1.195" > "$VERSIONS_DIR/.verified"
-[ -f "$GLIBC_LIB" ] && [ ! -L "$GLIBC_LIB" ] && { cp "$GLIBC_LIB" "${GLIBC_LIB}.bak"; ln -sf libc.so.6 "$GLIBC_LIB"; }
-sed -i 's/exec "\$bin"/LD_PRELOAD= exec "\$bin"/' "$WRAPPER" 2>/dev/null
-sed -i 's/^RATE_LIMIT=.*/RATE_LIMIT=315360000/' "$WRAPPER" 2>/dev/null
+# libc.so 是 ld script 不是真 ELF → 换成符号链接
+if [ -f "$GLIBC_LIB" ] && [ ! -L "$GLIBC_LIB" ]; then
+    cp "$GLIBC_LIB" "${GLIBC_LIB}.bak"
+    ln -sf libc.so.6 "$GLIBC_LIB"
+fi
+# wrapper：无条件覆盖，统一走 proot
+cat > "$WRAPPER" << 'WRAPPEREOF'
+#!/data/data/com.termux/files/usr/bin/bash
+BIN="$HOME/.local/share/claude/versions/2.1.195"
+LD_PRELOAD= exec proot -0 "$BIN" "$@"
+WRAPPEREOF
+chmod +x "$WRAPPER"
+# 清理 npm 可能创建的旧 wrapper（~/.local/bin 优先级更高会挡住我们）
+rm -f "$HOME/.local/bin/claude"
+hash -r 2>/dev/null || true
 --- 结束复制 ---
 
-B8. 写 settings.json（先替换 sk-你的key，再整段粘贴）：
+B8. 验证 wrapper 生效：
+
+--- 开始复制 ---
+command -v claude
+--- 结束复制 ---
+
+   应该输出 /data/data/com.termux/files/usr/bin/claude。
+   如果输出了 ~/.local/bin/claude，跑：
+   rm -f ~/.local/bin/claude && hash -r
+
+B9. 写 settings.json（先替换 sk-你的key，再整段粘贴）：
 
 --- 开始复制（替换 sk-你的key 后整段粘贴） ---
 mkdir -p ~/.claude
@@ -181,7 +241,7 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 --- 结束复制 ---
 
-B9. 新开一个 Termux 窗口，输入 claude 回车。
+B10. 新开一个 Termux 窗口，输入 claude 回车。
 
 
 常见报错和解决办法
@@ -214,9 +274,14 @@ B9. 新开一个 Termux 窗口，输入 claude 回车。
 原因：缺少编译工具
 解决：pkg install binutils make -y
 
-【报错】claude 启动后报 invalid ELF header 或 ld 错误
-原因：Termux glibc 的 libc.so 不是真库，以及 LD_PRELOAD 冲突
-解决：执行路线 A8 或 B7 的 Termux 修复代码段
+【报错】claude 启动后报 LIBC not found 或 version GLIBC 错误
+原因：Termux 的 LD_PRELOAD（libtermux-exec）跟 glibc 冲突，或者旧 npm wrapper 残留挡住了新 wrapper
+解决1：先跑 command -v claude，如果输出 ~/.local/bin/claude，跑 rm -f ~/.local/bin/claude && hash -r
+解决2：如果上面不是原因，重新执行路线 A8 或 B7 的 Termux 修复代码段
+
+【报错】command -v claude 输出 ~/.local/bin/claude 而不是 /data/data/com.termux/files/usr/bin/claude
+原因：旧 npm 安装残留的 wrapper 在 PATH 中优先级更高，挡住了新 wrapper
+解决：rm -f ~/.local/bin/claude && hash -r
 
 【报错】wrapper 每次启动反复下载更新
 原因：196 版本二进制损坏，wrapper 一直重试

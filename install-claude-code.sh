@@ -57,7 +57,6 @@ if ! claude --version &> /dev/null 2>&1; then
             echo "[!] 二进制下载失败，手动运行："
             echo "    mkdir -p ~/.local/share/claude/versions && curl -x http://127.0.0.1:7890 -fsSL --max-time 120 \"https://github.com/xvxv-stack7/android-claude-wechat/releases/download/binary-2.1.195/claude-2.1.195-arm64.xz\" -o ~/.local/share/claude/versions/claude.xz && python3 -c \"import lzma,sys; sys.stdout.buffer.write(lzma.open('\$HOME/.local/share/claude/versions/claude.xz').read())\" > ~/.local/share/claude/versions/2.1.195 && chmod +x ~/.local/share/claude/versions/2.1.195"
         fi
-        fi
     fi
 fi
 
@@ -85,29 +84,17 @@ if [ -f "$GLIBC_LIB" ] && [ ! -L "$GLIBC_LIB" ]; then
     ln -sf libc.so.6 "$GLIBC_LIB"
     echo "[fix] libc.so → libc.so.6"
 fi
-# 5. wrapper 不存在则创建，存在则清 LD_PRELOAD（Termux bionic 与 glibc 冲突）
-if [ ! -f "$WRAPPER" ]; then
-    cat > "$WRAPPER" << 'WRAPPEREOF'
-#!/bin/bash
-VERSIONS_DIR="$HOME/.local/share/claude/versions"
-GLIBC_LIB="/data/data/com.termux/files/usr/glibc/lib/libc.so"
-BIN="$VERSIONS_DIR/2.1.195"
-[ -f "$GLIBC_LIB" ] && export LD_PRELOAD="$GLIBC_LIB"
-# 先试直接跑，崩了(SIGSYS)自动回退proot
-"$BIN" "$@" 2>/tmp/.claude-err.log
-rc=$?
-if [ $rc -ge 159 ] || grep -q "Bad system call" /tmp/.claude-err.log 2>/dev/null; then
-  rm -f /tmp/.claude-err.log
-  exec proot -0 "$BIN" "$@"
-fi
-rm -f /tmp/.claude-err.log
+# 5. wrapper：无条件覆盖，统一走 proot，不再试直接跑（各手机内核差异太大）
+cat > "$WRAPPER" << 'WRAPPEREOF'
+#!/data/data/com.termux/files/usr/bin/bash
+BIN="$HOME/.local/share/claude/versions/2.1.195"
+LD_PRELOAD= exec proot -0 "$BIN" "$@"
 WRAPPEREOF
-    chmod +x "$WRAPPER"
-    echo "[fix] wrapper 已创建"
-else
-    sed -i 's/exec "\$bin"/LD_PRELOAD= exec "\$bin"/' "$WRAPPER" 2>/dev/null || true
-    echo "[fix] LD_PRELOAD 已清"
-fi
+chmod +x "$WRAPPER"
+# 清理 npm 可能创建的旧 wrapper（~/.local/bin/claude 优先级更高会挡住我们）
+rm -f "$HOME/.local/bin/claude" 2>/dev/null
+hash -r 2>/dev/null || true
+echo "[fix] wrapper 已覆盖"
 # 6. 永不自动更新（RATE_LIMIT=10年）
 sed -i 's/^RATE_LIMIT=.*/RATE_LIMIT=315360000/' "$WRAPPER" 2>/dev/null || true
 

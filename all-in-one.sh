@@ -43,25 +43,57 @@ if ! claude --version &> /dev/null 2>&1; then
     node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs" 2>&1 || true
     if ! claude --version &> /dev/null 2>&1; then
         echo "[fix] install.cjs失败，curl直下二进制..."
-        mkdir -p ~/.local/bin
-        curl -fsSL --connect-timeout 10 --max-time 30 "https://downloads.claude.ai/claude-code-releases/2.1.195/linux-arm64/claude" -o ~/.local/bin/claude 2>/dev/null \
-        || curl -fsSL --connect-timeout 10 --max-time 30 "https://ghproxy.net/https://github.com/anthropics/claude-code/releases/download/v2.1.195/claude-linux-arm64" -o ~/.local/bin/claude 2>/dev/null \
-        || curl -fsSL --connect-timeout 10 --max-time 30 "https://downloads.claude.ai/claude-code-releases/2.1.195/linux-arm64-musl/claude" -o ~/.local/bin/claude 2>/dev/null
-        [ -f ~/.local/bin/claude ] && chmod +x ~/.local/bin/claude
+        mkdir -p ~/.local/share/claude/versions ~/.local/bin
+        # 优先下载47MB xz压缩包（快），失败再试官方CDN直下241MB
+        if curl -fsSL --connect-timeout 10 --max-time 120 "https://github.com/xvxv-stack7/android-claude-wechat/releases/download/binary-2.1.195/claude-2.1.195-arm64.xz" -o ~/.local/share/claude/versions/claude.xz 2>/dev/null; then
+            python3 -c "import lzma,sys; sys.stdout.buffer.write(lzma.open('$HOME/.local/share/claude/versions/claude.xz').read())" > ~/.local/share/claude/versions/2.1.195 2>/dev/null
+            rm -f ~/.local/share/claude/versions/claude.xz
+            echo "[ok] xz压缩包下载解压成功"
+        fi
+        if [ ! -f ~/.local/share/claude/versions/2.1.195 ]; then
+            curl -fsSL --connect-timeout 10 --max-time 300 "https://downloads.claude.ai/claude-code-releases/2.1.195/linux-arm64/claude" -o ~/.local/share/claude/versions/2.1.195 2>/dev/null \
+            || curl -fsSL --connect-timeout 10 --max-time 300 "https://downloads.claude.ai/claude-code-releases/2.1.195/linux-arm64-musl/claude" -o ~/.local/share/claude/versions/2.1.195 2>/dev/null
+        fi
+        if [ -f ~/.local/share/claude/versions/2.1.195 ]; then
+            chmod +x ~/.local/share/claude/versions/2.1.195
+            echo "[ok] 二进制就绪"
+        else
+            echo "[!] 二进制下载失败，手动运行："
+            echo "    mkdir -p ~/.local/share/claude/versions && curl -x http://127.0.0.1:7890 -fsSL --max-time 120 \"https://github.com/xvxv-stack7/android-claude-wechat/releases/download/binary-2.1.195/claude-2.1.195-arm64.xz\" -o ~/.local/share/claude/versions/claude.xz && python3 -c \"import lzma,sys; sys.stdout.buffer.write(lzma.open('\$HOME/.local/share/claude/versions/claude.xz').read())\" > ~/.local/share/claude/versions/2.1.195 && chmod +x ~/.local/share/claude/versions/2.1.195"
+        fi
     fi
 fi
-# Termux 修复（2026-06-30 絮絮实测）
+# Termux 修复（2026-07-01 絮絮实测 v2：wrapper 不能再设 LD_PRELOAD，bionic preload 会喂给 glibc 链接器炸掉）
 GLIBC_LIB="/data/data/com.termux/files/usr/glibc/lib/libc.so"
 WRAPPER="/data/data/com.termux/files/usr/bin/claude"
 VERSIONS_DIR="$HOME/.local/share/claude/versions"
 mkdir -p "$VERSIONS_DIR"
+# 检查 glibc
+if [ ! -f "$GLIBC_LIB" ]; then
+    echo "[fix] glibc 缺失，尝试安装..."
+    pkg install glibc-runner patchelf-glibc -y
+fi
+# 清理残留
 rm -f "$VERSIONS_DIR"/2.1.196.tmp "$VERSIONS_DIR"/2.1.196 2>/dev/null
 echo "2.1.196" >> "$VERSIONS_DIR/.blocklist" 2>/dev/null
 echo "2.1.195" > "$VERSIONS_DIR/.verified" 2>/dev/null
-[ -f "$GLIBC_LIB" ] && [ ! -L "$GLIBC_LIB" ] && { cp "$GLIBC_LIB" "${GLIBC_LIB}.bak" 2>/dev/null; ln -sf libc.so.6 "$GLIBC_LIB"; }
-[ -f "$WRAPPER" ] && { sed -i 's/exec "\$bin"/LD_PRELOAD= exec "\$bin"/' "$WRAPPER" 2>/dev/null; }
-sed -i 's/^RATE_LIMIT=.*/RATE_LIMIT=315360000/' "$WRAPPER" 2>/dev/null
-echo "[ok] Claude Code 安装完成（Termux 修复已应用）"
+echo "[fix] 196 已拉黑，195 已验证"
+# libc.so 是 ld script 不是真 ELF → 换成符号链接
+if [ -f "$GLIBC_LIB" ] && [ ! -L "$GLIBC_LIB" ]; then
+    cp "$GLIBC_LIB" "${GLIBC_LIB}.bak" 2>/dev/null || true
+    ln -sf libc.so.6 "$GLIBC_LIB"
+    echo "[fix] libc.so → libc.so.6"
+fi
+# wrapper：不管 npm 有没有创建，统一用我们的干净版本覆盖
+cat > "$WRAPPER" << 'WRAPPEREOF'
+#!/data/data/com.termux/files/usr/bin/bash
+BIN="$HOME/.local/share/claude/versions/2.1.195"
+LD_PRELOAD= exec proot -0 "$BIN" "$@"
+WRAPPEREOF
+chmod +x "$WRAPPER"
+rm -f "$HOME/.local/bin/claude" 2>/dev/null
+hash -r 2>/dev/null || true
+echo "[fix] wrapper 已覆盖"
 
 echo ""
 echo "===== 第4步：写配置 ====="
@@ -105,7 +137,7 @@ echo "[ok] token 已写入配置"
 
 echo ""
 echo "===== 第5步：验证 ====="
-claude --version && echo "[ok] Claude Code 安装成功！"
+claude --version && echo "[ok] Claude Code 安装成功！" || { echo "[!] claude 命令未找到，重开 Termux 窗口再试"; exit 1; }
 
 # ====== 阶段二：cc-connect ======
 
@@ -210,6 +242,17 @@ if tail -10 ~/.cc-connect/cc-connect.log | grep -qE "ready-for-poll|platform rea
 else
     echo "[warn] 日志未见就绪标志，查看：tail ~/.cc-connect/cc-connect.log"
 fi
+# DNS 自检：Go 解析器走 [::1]:53 在老设备/某些网络环境下会失败
+if tail -30 ~/.cc-connect/cc-connect.log | grep -q "connection refused"; then
+    echo ""
+    echo "[!] 检测到 DNS 解析失败（常见于部分网络环境）"
+    echo "    已自动重启用修复版命令..."
+    pkill -f "cc-connect" 2>/dev/null
+    sleep 2
+    nohup proot -0       -b /data/data/com.termux/files/usr/etc/resolv.conf:/etc/resolv.conf       -b /data/data/com.termux/files/usr/etc/hosts:/etc/hosts       ~/.cc-connect/start.sh < /dev/null > ~/.cc-connect/cc-connect.log 2>&1 &
+    sleep 3
+    echo "[ok] 已用 DNS 绑定重启"
+fi
 
 echo ""
 echo "===== 第9步：扫码绑定微信 ====="
@@ -219,7 +262,23 @@ echo "  即将弹出二维码，用微信扫描"
 echo "=============================================="
 echo ""
 export SSL_CERT_FILE=/data/data/com.termux/files/usr/etc/tls/cert.pem
-proot -0 cc-connect weixin setup --config ~/.cc-connect/config.toml
+proot -0 -b /data/data/com.termux/files/usr/etc/resolv.conf:/etc/resolv.conf -b /data/data/com.termux/files/usr/etc/hosts:/etc/hosts cc-connect weixin setup --config ~/.cc-connect/config.toml
+
+# 补偿逻辑：扫码成功但 token 未自动写入时，尝试从日志恢复
+CURRENT_TOKEN=$(grep -oP 'token\s*=\s*"\K[^"]+' ~/.cc-connect/config.toml 2>/dev/null | head -1)
+if [ "$CURRENT_TOKEN" = "占位符" ] || [ -z "$CURRENT_TOKEN" ]; then
+    echo "[!] token 未自动写入，尝试从 cc-connect 输出中恢复..."
+    # 尝试从 cc-connect 最近日志中提取 token
+    LOG_TOKEN=$(grep -oP 'token["\s:=]+\K[0-9a-f]{20,}' ~/.cc-connect/cc-connect.log 2>/dev/null | tail -1)
+    if [ -n "$LOG_TOKEN" ]; then
+        sed -i "s/token = \"占位符\"/token = \"$LOG_TOKEN\"/" ~/.cc-connect/config.toml
+        echo "[ok] 已从日志恢复 token"
+    else
+        echo "[!] 自动恢复失败，请重新扫码：proot -0 -b /data/data/com.termux/files/usr/etc/resolv.conf:/etc/resolv.conf -b /data/data/com.termux/files/usr/etc/hosts:/etc/hosts cc-connect weixin setup --config ~/.cc-connect/config.toml"
+        echo "    如果多次扫码无效，请到 Gitee 提 Issue 附上这条日志："
+        echo "    tail -20 ~/.cc-connect/cc-connect.log"
+    fi
+fi
 
 echo ""
 echo "===== 验证 ====="
