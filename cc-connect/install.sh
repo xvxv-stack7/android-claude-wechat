@@ -152,7 +152,7 @@ echo ""
 
 # 扫码
 export SSL_CERT_FILE=/data/data/com.termux/files/usr/etc/tls/cert.pem
-proot -0 cc-connect weixin setup --config ~/.cc-connect/config.toml
+proot -0 -b /data/data/com.termux/files/usr/etc/resolv.conf:/etc/resolv.conf -b /data/data/com.termux/files/usr/etc/hosts:/etc/hosts cc-connect weixin setup --config ~/.cc-connect/config.toml
 
 # 补偿逻辑：扫码成功但 token 未自动写入时，尝试从日志恢复
 CURRENT_TOKEN=$(grep -oP 'token\s*=\s*"\K[^"]+' ~/.cc-connect/config.toml 2>/dev/null | head -1)
@@ -163,7 +163,7 @@ if [ "$CURRENT_TOKEN" = "占位符" ] || [ -z "$CURRENT_TOKEN" ]; then
         sed -i "s/token = \"占位符\"/token = \"$LOG_TOKEN\"/" ~/.cc-connect/config.toml
         echo "[ok] 已从日志恢复 token"
     else
-        echo "[!] 自动恢复失败，请重新扫码：proot -0 cc-connect weixin setup --config ~/.cc-connect/config.toml"
+        echo "[!] 自动恢复失败，请重新扫码：proot -0 -b /data/data/com.termux/files/usr/etc/resolv.conf:/etc/resolv.conf -b /data/data/com.termux/files/usr/etc/hosts:/etc/hosts cc-connect weixin setup --config ~/.cc-connect/config.toml"
         echo "    如果多次扫码无效，请到 Gitee 提 Issue 附上这条日志："
         echo "    tail -20 ~/.cc-connect/cc-connect.log"
     fi
