@@ -48,36 +48,32 @@ else
     }
 fi
 
-echo ""
-echo "===== 第2步：换 Termux 国内源 ====="
-# 1. 写 sources.list（兜底，兼容所有版本）
-for SRC in "$PREFIX/etc/apt/sources.list" "$PREFIX/etc/apt/sources.list.d/glibc.list"; do
-    if [ -f "$SRC" ]; then
-        sed -i -e 's@https\?://[^/]*/termux/apt@https://mirrors.tuna.tsinghua.edu.cn/termux/apt@g' \
-               -e 's@https\?://[^/]*/apt@https://mirrors.tuna.tsinghua.edu.cn/termux/apt@g' "$SRC" 2>/dev/null
-    fi
-done
-# 2. 写 mirror 配置（新版 Termux 的镜像选择系统）
-MIRROR_DIR="$PREFIX/etc/termux/mirrors"
-mkdir -p "$MIRROR_DIR" 2>/dev/null
-cat > "$MIRROR_DIR/default" << 'MIRROREOF'
-WEIGHT=10
-MAIN="https://mirrors.tuna.tsinghua.edu.cn/termux/apt/termux-main"
-ROOT="https://mirrors.tuna.tsinghua.edu.cn/termux/apt/termux-root"
-X11="https://mirrors.tuna.tsinghua.edu.cn/termux/apt/termux-x11"
-MIRROREOF
-	# 验证镜像源是否生效（新版 Termux 可能不认直接写入的配置文件）
-	if pkg update -y > /dev/null 2>&1; then
-		echo "[ok] Termux 源已切到清华镜像"
-	else
-		echo "[!] 镜像源未生效，请先手动配置："
-		echo "    1. 新开一个 Termux 窗口，运行: termux-change-repo"
-		echo "    2. 选择清华镜像 (Tsinghua)"
-		echo "    3. 回到这个窗口重新运行: bash all-in-one.sh"
-		echo ""
-		echo "    配好源之后直接重新跑一键命令就行，不需要额外操作。"
-		exit 1
+	echo ""
+	echo "===== 第2步：换 Termux 国内源 ====="
+	# 先检查镜像源是否已配好（大部分用户安装后没选过镜像）
+	if ! pkg update -y > /dev/null 2>&1; then
+		if [ ! -f "$PREFIX/etc/termux/mirrors/default" ]; then
+			echo "[!] Termux 还没选过镜像源，pkg 无法下载软件包"
+			echo "    请先在另一个 Termux 窗口运行: termux-change-repo"
+			echo "    选择清华镜像 (Tsinghua) 后回到这个窗口"
+			echo "    重新运行: bash all-in-one.sh"
+			echo ""
+			echo "    💡 配好源之后直接重新跑一键命令就行，不需要额外操作。"
+			exit 1
+		fi
+		# mirror 文件存在但 pkg 仍失败 → 老版本兼容修复
+		for SRC in "$PREFIX/etc/apt/sources.list" "$PREFIX/etc/apt/sources.list.d/glibc.list"; do
+		    if [ -f "$SRC" ]; then
+		        sed -i -e 's@https\?://[^/]*/termux/apt@https://mirrors.tuna.tsinghua.edu.cn/termux/apt@g' \
+		               -e 's@https\?://[^/]*/apt@https://mirrors.tuna.tsinghua.edu.cn/termux/apt@g' "$SRC" 2>/dev/null
+		    fi
+		done
+		if ! pkg update -y > /dev/null 2>&1; then
+			echo "[!] 镜像源修复失败，请手动运行 termux-change-repo 后重试"
+			exit 1
+		fi
 	fi
+	echo "[ok] Termux 源已切到清华镜像"
 
 echo ""
 echo "===== 第3步：装依赖 ====="
