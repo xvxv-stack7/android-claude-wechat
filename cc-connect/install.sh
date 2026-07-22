@@ -139,6 +139,17 @@ if tail -10 ~/.cc-connect/cc-connect.log | grep -qE "ready-for-poll|platform rea
 else
     echo "[warn] 日志没看到就绪标志，但进程已启动。查看日志：tail ~/.cc-connect/cc-connect.log"
 fi
+# DNS 自检：Go 解析器走 [::1]:53 在老设备/某些网络环境下会失败
+if tail -30 ~/.cc-connect/cc-connect.log | grep -q "connection refused"; then
+    echo ""
+    echo "[!] 检测到 DNS 解析失败（常见于部分网络环境）"
+    echo "    已自动重启用修复版命令..."
+    pkill -f "cc-connect" 2>/dev/null
+    sleep 2
+    nohup proot -0       -b /data/data/com.termux/files/usr/etc/resolv.conf:/etc/resolv.conf       -b /data/data/com.termux/files/usr/etc/hosts:/etc/hosts       ~/.cc-connect/start.sh < /dev/null > ~/.cc-connect/cc-connect.log 2>&1 &
+    sleep 3
+    echo "[ok] 已用 DNS 绑定重启"
+
 
 echo ""
 echo "===== 第8步：扫码绑定微信 ====="
