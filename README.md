@@ -120,13 +120,9 @@ proot -0 \
 
 **安装时卡在"Bun 运行时"？**
 
-Claude Code v2.1.196 开始依赖 Bun，但 Termux 不支持。我们的脚本已自动钉在 v2.1.195（Node.js 版）。如果手动安装请用：
+Claude Code v2.1.196 开始依赖 Bun，但 Termux 不支持。我们的安装脚本使用的是预编译的 v2.1.195 二进制（Node.js 版），不经 npm，不依赖 Bun——如果你跑的是我们的 `all-in-one.sh`，不会遇到这个问题。
 
-```bash
-npm install -g @anthropic-ai/claude-code@2.1.195
-```
-
-不要用 `npm install -g @anthropic-ai/claude-code`（会装最新版，需要 Bun）。
+如果你在其他地方看到"需要 Bun"的教程，那是针对最新版 Claude Code 的。回到我们的脚本重新安装即可。
 
 **其他问题** → [Gitee Issues](https://gitee.com/xvxv663/android-claude-wechat/issues)
 
